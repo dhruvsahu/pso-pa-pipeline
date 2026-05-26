@@ -1,7 +1,5 @@
-import fitz
 import re
 import json
-from ollama import chat
 import pandas as pd
 from extractors.model_router import (
     ModelRouter
@@ -745,7 +743,7 @@ Required JSON format:
             debug_file = (
 
                 f"debug/"
-                f"debug_utilization_{brand}.txt"
+                f"debug_step_therapy_{brand}.txt"
             )
 
             with open(

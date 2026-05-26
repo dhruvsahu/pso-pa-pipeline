@@ -1,8 +1,4 @@
-from pyexpat import model
-
-import fitz
 import json
-from ollama import chat
 import re
 from extractors.model_router import (
     ModelRouter

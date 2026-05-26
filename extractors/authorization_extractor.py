@@ -1,6 +1,4 @@
-import fitz
 import json
-from ollama import chat
 from extractors.model_router import (
     ModelRouter
 )
@@ -323,7 +321,7 @@ Duration fields may contain:
             debug_file = (
 
                 f"debug/"
-                f"debug_utilization_{brand}.txt"
+                f"debug_authorization_{brand}.txt"
             )
 
             with open(
