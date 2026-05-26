@@ -83,29 +83,31 @@ class AccessQualityScorer:
         # STEP THERAPY PENALTIES
         # =================================================
 
+        _brand_steps = step_therapy_result.get("brand_steps", 0)
         brand_steps = (
-            step_therapy_result.get(
-                "brand_steps",
-                0
-            )
+            int(_brand_steps)
+            if str(_brand_steps).lstrip("-").isdigit()
+            else 0
         )
 
+        _generic_steps = step_therapy_result.get("generic_steps", 0)
         generic_steps = (
-            step_therapy_result.get(
-                "generic_steps",
-                0
-            )
+            int(_generic_steps)
+            if str(_generic_steps).lstrip("-").isdigit()
+            else 0
         )
 
+        # extractor returns phototherapy_required ("Yes"/"No"/"NA"),
+        # not a count — convert to 0 or 1
         phototherapy_steps = (
-            step_therapy_result.get(
-                "phototherapy_steps",
-                0
-            )
+            1
+            if step_therapy_result.get(
+                "phototherapy_required"
+            ) == "Yes"
+            else 0
         )
 
         total_steps = (
-
             brand_steps
             + generic_steps
             + phototherapy_steps
@@ -146,7 +148,10 @@ class AccessQualityScorer:
             )
         )
 
-        if len(specialists) > 0:
+        if (
+            isinstance(specialists, list)
+            and len(specialists) > 0
+        ):
 
             score -= 10
 
@@ -159,9 +164,8 @@ class AccessQualityScorer:
         # =================================================
 
         if clinical_access_result.get(
-            "precertification_required",
-            False
-        ):
+            "precertification_required"
+        ) == "Yes":
 
             score -= 10
 
@@ -175,7 +179,7 @@ class AccessQualityScorer:
 
         if authorization_result.get(
             "reauthorization_required"
-        ):
+        ) == "Yes":
 
             score -= 5
 
@@ -194,7 +198,10 @@ class AccessQualityScorer:
             )
         )
 
-        if len(quantity_limits) > 0:
+        if (
+            isinstance(quantity_limits, list)
+            and len(quantity_limits) > 0
+        ):
 
             score -= 5
 
@@ -212,7 +219,11 @@ class AccessQualityScorer:
 
         if (
             age_value
-            and age_value != "ALL"
+            and age_value not in (
+                "ALL",
+                "NA",
+                "No Age Restriction"
+            )
         ):
 
             score -= 5
