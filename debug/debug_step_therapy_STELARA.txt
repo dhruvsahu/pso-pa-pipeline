@@ -1,264 +1,32 @@
 
 
-===== PAGE 1 =====
- 
- 
-  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-   
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-   
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-AETNA BETTER HEALTH® 
-Coverage Policy/Guideline 
-Name: 
-Stelara and Biosimilars 
-Page: 
-1 of 10 
-Effective Date: 
-6/20/2025 
-Last Review Date: 
-5/2025 
-Applies 
-to: 
-☒Illinois 
-☐New Jersey 
-☐Pennsylvania Kids 
-☐Florida 
-☐Maryland 
-☐Virginia 
-☐Florida Kids 
-☐Michigan 
-☐Kentucky PRMD 
-Intent: 
-The intent of this policy/guideline is to provide information to the prescribing practitioner 
-outlining the coverage criteria for Stelara under the patient’s prescription drug benefit. 
-Description: 
-The indications below including FDA-approved indications and compendial uses are 
-considered a covered benefit provided that all the approval criteria are met and the member 
-has no exclusions to the prescribed therapy. 
-FDA-approved Indications1-13  
-•  Moderate to severe plaque psoriasis (PsO) in patients 6 years and older who are 
-candidates for phototherapy or systemic therapy 
-•  Active psoriatic arthritis (PsA) in patients 6 years and older 
-•  Moderately to severely active Crohn’s disease (CD) in adults 
-•  Moderately to severely active ulcerative colitis (UC) in adults 
-Compendial Uses27,29 
-Immune checkpoint inhibitor-related toxicity 
-All other indications are considered experimental/investigational and not medically 
-necessary. 
-Applicable Drug List: 
-Stelara (ustekinumab)  
-Imuldosa (ustekinumab-srlf)
-Otulfi (ustekinumab-aauz)
-Pyzchiva (ustekinumab-ttwe)
-Selarsdi (ustekinumab-aekn)
-Steqeyma (ustekinumab-stba)  
-Wezlana (ustekinumab-auub)
-Yesintek (ustekinumab-kfce)
-ustekinumab (unbranded Stelara)
-ustekinumab-aauz (unbranded Otulfi)
-ustekinumab-aekn (unbranded Selarsdi)
-ustekinumab-stba (unbranded Steqeyma)
-ustekinumab-ttwe (unbranded Pyzchiva)
-
-
 ===== PAGE 2 =====
- 
- 
-  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-   
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-AETNA BETTER HEALTH® 
-Coverage Policy/Guideline 
-Name: 
-Stelara and Biosimilars 
-Page: 
-2 of 10 
-Effective Date: 
-6/20/2025 
-Last Review Date: 
-5/2025 
-Applies 
-to: 
-☒Illinois 
-☐Florida 
-☐New Jersey 
-☐Maryland 
-☐Pennsylvania Kids 
-☐Virginia 
-☐Florida Kids 
-☐Michigan 
-☐Kentucky PRMD 
-Policy/Guideline: 
-Documentation for all indications: 
-The patient is unable to take THREE preferred products, where indicated, for the given 
-diagnosis due to a trial and inadequate treatment response or intolerance, or a 
-contraindication. Documentation is required for approval. 
-Documentation 
-Submission of the following information is necessary to initiate the prior authorization 
-review: 
-Plaque psoriasis (PsO) 
-Initial requests 
-•  Chart notes or medical record documentation of affected area(s) and body  
-surface area (BSA) affected (if applicable).  
-•  Chart notes, medical record documentation, or claims history supporting  
-previous medications tried (if applicable), including response to therapy. If  
-therapy is not advisable, documentation of clinical reason to avoid therapy.  
-Continuation requests  
-Chart notes or medical record documentation of decreased body surface area (BSA)  
-affected and/or improvement in signs and symptoms.  
-Psoriatic arthritis (PsA)  
-Initial requests  
-Chart notes, medical record documentation, or claims history supporting previous  
-medications tried (if applicable), including response to therapy. If therapy is not advisable,  
-documentation of clinical reason to avoid therapy.  
-Continuation requests  
-Chart notes or medical record documentation supporting positive clinical response.  
-Crohn’s disease (CD) and ulcerative colitis (UC) 
-Continuation requests: Chart notes or medical record documentation supporting positive 
-clinical response to therapy or remission. 
-Immune checkpoint inhibitor-related toxicity 
-Chart notes, medical record documentation, or claims history supporting previous 
-medications tried (if applicable), including response to therapy. If therapy is not advisable, 
-documentation of clinical reason to avoid therapy. 
+MVP Health Care Medical Policy 
+ Page 2 of 4 
+A. For all indications, the following criteria must be met in addition to the 
+specific diagnosis criteria below. 
+• Self-administered formulations fall under the Medicare Part D (pharmacy) benefit. 
+o Refer to the Medicare Part D Formulary and Part D policies for drugs that 
+may be covered under the Part D benefit. 
+• Must be ordered by or with consult from a rheumatologist, immunologist, 
+dermatologist, gastroenterologist or colorectal surgeon 
+• Must be prescribed for an FDA approved indication 
+B. Psoriasis 
+Ustekinumab may be considered for coverage when the following criteria is met: 
+• Documentation of moderate to severe chronic plaque psoriasis OR involvement 
+of the palms, soles of feet and scalp, with an inadequate response, intolerance or 
+contraindication with TWO of the following therapies: Enbrel, Humira, Otezla, 
+Skyrizi. 
+Initial approval will be for 6 months 
+Extensions requests will be approved up to 12 months if the member has a continued 
+benefit to therapy. Extension requests where the ustekinumab did not have the full 
+desired effect or considered a clinical failure will require clinical rationale for continuing. 
+C. Psoriatic Arthritis (PsA) 
+Ustekinumab may be considered for coverage when the following criteria is met: 
+• Documentation of active psoriatic arthritis with an inadequate response, 
+intolerance or contraindication with TWO of the following therapies: Enbrel, 
+Humira, Otezla, Xeljanz/XR. 
+Initial approval will be for 6 months. 
+Extensions requests will be approved up to 12 months if the member has a continued 
+benefit to therapy. Extension requests where the ustekinumab did not have the full 
+desired effect or considered a clinical failure will require clinical rationale for continuing.

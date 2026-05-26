@@ -44,34 +44,6 @@ class AuthorizationExtractor:
         )
 
     # =====================================================
-    # PDF PAGE EXTRACTION
-    # =====================================================
-
-    def extract_pages(
-        self,
-        pdf_path
-    ):
-
-        doc = fitz.open(
-            pdf_path
-        )
-
-        pages = []
-
-        for i in range(len(doc)):
-
-            text = doc[i].get_text()
-
-            pages.append({
-
-                "page_number": i + 1,
-
-                "text": text
-            })
-
-        return pages
-
-    # =====================================================
     # AUTHORIZATION CONTEXT EXTRACTION
     # =====================================================
 

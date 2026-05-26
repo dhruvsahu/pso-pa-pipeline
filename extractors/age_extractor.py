@@ -76,27 +76,6 @@ class AgeExtractor:
         )
 
     # =====================================================
-    # PDF PAGE EXTRACTION
-    # =====================================================
-
-    def extract_pages(self, pdf_path):
-
-        doc = fitz.open(pdf_path)
-
-        pages = []
-
-        for page_num, page in enumerate(doc):
-
-            text = page.get_text()
-
-            pages.append({
-                "page_number": page_num + 1,
-                "text": text
-            })
-
-        return pages
-
-    # =====================================================
     # PAGE SCORING
     # =====================================================
 

@@ -7,7 +7,7 @@
       "brand": "STELARA",
       "value": ">=6",
       "source_statement": "Ustekinumab is indicated for moderate to severe plaque psoriasis in members 6 years or older",
-      "reasoning": "The policy explicitly identifies the target brand (Stelara) as being indicated for members 6 years or older, which satisfies the requirement to return the youngest explicit numerical age threshold.",
+      "reasoning": "The policy explicitly states the drug is indicated for moderate to severe plaque psoriasis in members 6 years or older. Per the instructions, when an explicit numerical age exists, it must be prioritized.",
       "confidence": 1.0,
       "retrieved_pages": [
         1,
@@ -17,7 +17,24 @@
     "step_therapy": {
       "parameter": "Step Therapy",
       "brand": "STELARA",
-      "reasoning": "Extracted step therapy requirements for Psoriasis and Psoriatic Arthritis based on the provided policy document for Stelara (Ustekinumab).",
+      "logic_type": [
+        "Step Therapy"
+      ],
+      "brand_steps": 2,
+      "generic_steps": "NA",
+      "phototherapy_required": "No",
+      "brand_therapies": [
+        "Enbrel",
+        "Humira",
+        "Otezla",
+        "Skyrizi"
+      ],
+      "generic_therapies": [],
+      "step_therapy_requirements": [
+        "Psoriasis: Inadequate response, intolerance or contraindication with TWO of the following: Enbrel, Humira, Otezla, Skyrizi.",
+        "Psoriatic Arthritis: Inadequate response, intolerance or contraindication with TWO of the following: Enbrel, Humira, Otezla, Xeljanz/XR."
+      ],
+      "reasoning": "Extracted specific step therapy failure requirements for the two indications listed under the policy for Ustekinumab (Stelara).",
       "confidence": 1,
       "retrieved_pages": [
         2
@@ -33,7 +50,7 @@
         "The member has a continued benefit to therapy.",
         "Extension requests where the ustekinumab did not have the full desired effect or considered a clinical failure will require clinical rationale for continuing."
       ],
-      "reasoning": "The policy explicitly specifies an initial authorization of 6 months for Psoriasis. It includes language regarding 'Extensions requests', which constitutes a reauthorization process. The reauthorization duration is explicitly stated as up to 12 months, and the requirements are defined by the need for continued benefit or clinical rationale in cases of treatment failure.",
+      "reasoning": "The policy for Psoriasis explicitly states an initial duration of 6 months and a subsequent extension (reauthorization) duration of up to 12 months, contingent upon the member demonstrating continued benefit or providing clinical rationale in cases of clinical failure.",
       "confidence": 1.0
     },
     "utilization_management": {
@@ -41,7 +58,7 @@
       "brand": "STELARA",
       "quantity_limits": "NA",
       "source_statements": [],
-      "reasoning": "The provided policy text for Stelara (ustekinumab) does not contain any mention of quantity limits, QLs, or quantity restrictions.",
+      "reasoning": "The provided text contains sections for 'Overview/Summary of Evidence' and 'Indications/Criteria', but does not contain any mention of 'quantity limit', 'quantity limits', 'QL', or 'quantity restriction' for Stelara.",
       "confidence": 1.0
     },
     "clinical_access": {
@@ -54,19 +71,18 @@
         "Members should be screened for immunologic and infectious disease prior to initiating therapy.",
         "Drugs Requiring Prior Authorization under the medical benefit: J3358 Stelara (ustekinumab intravenous injection, 1mg)"
       ],
-      "reasoning": "The policy explicitly requires members to be screened for infectious disease (which includes TB screening in standard clinical practice for biologics) prior to initiation. Prior authorization is explicitly required as the drug is listed under 'Drugs Requiring Prior Authorization under the medical benefit'. No specific medical specialist types were mentioned in the provided text snippet.",
+      "reasoning": "The policy requires members to be screened for infectious disease (which includes TB testing in standard clinical practice for monoclonal antibodies) prior to initiation. Prior authorization is explicitly listed under the 'Drugs Requiring Prior Authorization under the medical benefit' section. No specific specialist requirements are mentioned in the provided text.",
       "confidence": 0.95
     },
     "access_quality": {
       "brand": "STELARA",
-      "access_quality_score": 65,
+      "access_quality_score": 70,
       "access_category": "FDA Parity",
-      "fda_alignment": "Favorable relative to FDA label",
+      "fda_alignment": "Near FDA parity",
       "score_breakdown": [
-        "Specialist restriction applied",
+        "Moderate step therapy burden",
         "Precertification required",
         "Reauthorization required",
-        "Quantity limits applied",
         "Age restriction applied"
       ]
     }
