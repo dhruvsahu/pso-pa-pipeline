@@ -1,10 +1,12 @@
 from ollama import chat
 
 import google.generativeai as genai
+import google.api_core.exceptions
 
 from dotenv import load_dotenv
 
 import os
+import time
 
 
 class ModelRouter:
@@ -77,14 +79,34 @@ class ModelRouter:
                 "[LLM] Using Gemini"
             )
 
-            response = (
+            max_retries = 6
+            wait = 30
 
-                self.gemini_model.generate_content(
-                    prompt
-                )
-            )
+            for attempt in range(max_retries):
 
-            return response.text
+                try:
+
+                    response = (
+                        self.gemini_model.generate_content(
+                            prompt
+                        )
+                    )
+
+                    return response.text
+
+                except google.api_core.exceptions.ResourceExhausted:
+
+                    if attempt == max_retries - 1:
+                        raise
+
+                    print(
+                        f"[RATE LIMIT] Gemini 429 — "
+                        f"waiting {wait}s "
+                        f"(attempt {attempt + 1}/{max_retries})"
+                    )
+
+                    time.sleep(wait)
+                    wait *= 2
 
         # =============================================
         # OLLAMA
