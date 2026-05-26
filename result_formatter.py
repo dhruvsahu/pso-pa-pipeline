@@ -65,12 +65,33 @@ for result in results:
         "Step Therapy Requirements Documented in Policy":
 
             (
+                "; ".join(
+                    result.get(
+                        "step_therapy",
+                        {}
+                    ).get(
+                        "step_therapy_requirements",
+                        []
+                    )
+                )
+                if isinstance(
+                    result.get(
+                        "step_therapy",
+                        {}
+                    ).get(
+                        "step_therapy_requirements",
+                        []
+                    ),
+                    list
+                )
+                else
                 result.get(
                     "step_therapy",
                     {}
                 ).get(
-                    "brand_steps"
-                ) != "NA"
+                    "step_therapy_requirements",
+                    "NA"
+                )
             ),
 
         "Number of Steps through Brands":
@@ -158,14 +179,33 @@ for result in results:
 
         "Quantity Limits":
 
-            "; ".join(
-
+            (
+                "; ".join(
+                    result.get(
+                        "utilization_management",
+                        {}
+                    ).get(
+                        "quantity_limits",
+                        []
+                    )
+                )
+                if isinstance(
+                    result.get(
+                        "utilization_management",
+                        {}
+                    ).get(
+                        "quantity_limits",
+                        []
+                    ),
+                    list
+                )
+                else
                 result.get(
                     "utilization_management",
                     {}
                 ).get(
                     "quantity_limits",
-                    []
+                    "NA"
                 )
             ),
 
@@ -202,16 +242,35 @@ for result in results:
 
         "Reauthorization Requirements Documented in Policy":
 
-            len(
-
+            (
+                "; ".join(
+                    result.get(
+                        "authorization",
+                        {}
+                    ).get(
+                        "reauthorization_requirements",
+                        []
+                    )
+                )
+                if isinstance(
+                    result.get(
+                        "authorization",
+                        {}
+                    ).get(
+                        "reauthorization_requirements",
+                        []
+                    ),
+                    list
+                )
+                else
                 result.get(
                     "authorization",
                     {}
                 ).get(
                     "reauthorization_requirements",
-                    []
+                    "NA"
                 )
-            ) > 0,
+            ),
 
         # -------------------------------------------------
         # ACCESS SCORE
