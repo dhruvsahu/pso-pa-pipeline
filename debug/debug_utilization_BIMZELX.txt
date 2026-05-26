@@ -1,0 +1,155 @@
+
+
+===== PAGE 1 =====
+
+Pharmacy Policy Bulletin: J-0561 Chronic Inflammatory Diseases - Medicare 
+Number: J-0561 
+Category: Prior Authorization 
+Line(s) of Business: 
+ Commercial 
+ Healthcare Reform 
+ Medicare 
+Benefit(s): 
+Not applicable 
+Region(s): 
+ All 
+ Delaware 
+ New York 
+ Pennsylvania 
+ West Virginia 
+Additional Restriction(s): 
+None 
+Version: J-0561-060 
+Original Date: 08/10/2017 
+Effective Date: 01/01/2025 
+Review Date: 12/04/2024 
+Drugs 
+Product(s): 
+• 
+Abrilada (adalimumab-afzb) subcutaneous (SC) injection 
+• 
+Actemra (tocilizumab) SC injection, intravenous (IV) infusion 
+• 
+Amjevita (adalimumab-atto) SC injection 
+• 
+Avsola (infliximab-axxq) IV infusion 
+• 
+Bimzelx (bimekizumab-bkzx) SC injection 
+• 
+Cimzia (certolizumab) SC injection 
+• 
+Cosentyx (secukinumab) SC injection, IV infusion 
+• 
+Cyltezo (adalimumab-adbm) SC injection 
+• 
+Enbrel (etanercept) SC injection 
+• 
+Entyvio (vedolizumab) SC injection, IV infusion 
+• 
+Hadlima (adalimumab-bwwd) SC injection 
+• 
+Hulio (adalimumab-fkjp) SC injection 
+• 
+Humira (adalimumab) SC injection 
+• 
+Hyrimoz (adalimumab-adaz) SC injection 
+• 
+Idacio (adalimumab-aacf) SC injection 
+• 
+Ilumya (tildrakizumab) SC injection 
+• 
+Infliximab IV infusion 
+• 
+Inflectra (infliximab-dyyb) IV infusion 
+• 
+Kevzara (sarilumab) SC injection 
+• 
+Kineret (anakinra) SC injection 
+• 
+Litfulo (ritlecitinib) oral capsule 
+• 
+Olumiant (baricitinib) oral tablet 
+• 
+Omvoh (mirikizumab-mrkz) SC injection, IV infusion 
+• 
+Orencia (abatacept) SC injection, IV infusion 
+• 
+Otezla (apremilast) oral tablet 
+• 
+Remicade (infliximab) IV infusion 
+• 
+Renflexis (infliximab-abda) IV infusion 
+• 
+Rinvoq (upadacitinib) oral tablet 
+• 
+Rinvoq LQ (upadacitinib) oral solution 
+• 
+Siliq (brodalumab) SC injection 
+• 
+Simlandi (adalimumab-ryvk) SC injection 
+• 
+Simponi (golimumab) SC injection 
+• 
+Simponi Aria (golimumab) IV infusion
+
+
+===== PAGE 19 =====
+
+In addition to the approval criteria outlined above, documentation that member weight and prescribed 
+Bimzelx dose is consistent with dosing below: 
+• 
+PsO 
+a. < 120 kg (264 lbs): 320 mg initially and every 4 weeks for the first 16 weeks, followed by 
+320 mg every 8 weeks. 
+b. ≥ 120 kg (264 lbs) (a. or b.): 
+a. 320 mg initially and every 4 weeks for the first 16 weeks, followed by 320 mg every 8 
+weeks. 
+b. 320 mg initially and every 4 weeks for the first 16 weeks, followed by 320 mg every 4 
+weeks. 
+B. Quantity Limitations 
+When prior authorization is approved, Bimzelx may be authorized in quantities as follows: 
+Diagnosis 
+Induction Therapy 
+Maintenance Therapy 
+PsO (< 120 kg)1 
+Ten (10) autoinjectors/prefilled 
+syringes within the first sixteen 
+(16) weeks of therapy 
+Two (2) autoinjectors/prefilled 
+syringes every eight (8) weeks 
+PsO (≥ 120 kg)1 
+Ten (10) autoinjectors/prefilled 
+syringes within the first sixteen 
+(16) weeks of therapy 
+Two (2) autoinjectors/prefilled 
+syringes every four (4) weeks 
+-OR- 
+Two (2) autoinjectors/prefilled 
+syringes every eight (8) weeks 
+1 See dosing criteria 
+III. Cimzia (certolizumab) 
+A. Approval Criteria 
+1. Rheumatoid Arthritis (RA) 
+When a benefit, coverage of Cimzia may be approved when all of the following criteria are 
+met (a. through d.): 
+a. The member is 18 years of age or older. 
+b. The member has a diagnosis of moderate to severe RA. 
+c. The member has experienced therapeutic failure or intolerance to at least one (1) non-
+biologic DMARD (e.g., methotrexate, leflunomide, sulfasalazine, cyclosporine), or all non-
+biologic DMARDs are contraindicated. 
+d. The member has experienced therapeutic failure or intolerance to at least two (2) 
+preferred biologic products for the treatment of RA (see Table 1). 
+2. Ankylosing Spondylitis (AS) 
+When a benefit, coverage of Cimzia may be approved when all of the following criteria are 
+met (a. through d.): 
+a. The member is 18 years of age or older. 
+b. The member has a diagnosis of AS. 
+c. The member has experienced therapeutic failure or intolerance to at least one (1) 
+nonsteroidal anti-inflammatory drug (NSAID), or all NSAIDs are contraindicated. 
+d. The member has experienced therapeutic failure or intolerance to at least two (2) 
+preferred biologic products for the treatment of AS (see Table 1). 
+3. Psoriatic Arthritis (PsA) 
+When a benefit, coverage of Cimzia may be approved when all of the following criteria are 
+met (a., b., and c.): 
+a. The member is 18 years of age or older. 
+b. The member has a diagnosis of PsA.

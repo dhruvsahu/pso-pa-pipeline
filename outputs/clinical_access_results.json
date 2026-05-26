@@ -1,0 +1,179 @@
+[
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [],
+    "precertification_required": false,
+    "reasoning": "",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "TREMFYA",
+    "tb_test_required": true,
+    "specialist_types": [
+      "dermatologist",
+      "rheumatologist",
+      "dermatologist",
+      "gastroenterologist"
+    ],
+    "precertification_required": true,
+    "reasoning": "TB testing is required for all indications as per the policy. Precertification is required based on the documentation criteria outlined.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": true,
+    "specialist_types": [],
+    "precertification_required": false,
+    "reasoning": "TB testing is required within 6 months of initiating therapy for persons who are na\u00efve to biologic drugs or targeted synthetic drugs associated with an increased risk of TB.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [
+      "Rheumatologist",
+      "Dermatologist",
+      "Gastroenterologist"
+    ],
+    "precertification_required": true,
+    "reasoning": "",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "SILIQ",
+    "tb_test_required": true,
+    "specialist_types": [
+      "rheumatologist",
+      "gastroenterologist",
+      "dermatologist",
+      "pulmonologist",
+      "radiologist",
+      "pathologist",
+      "allergist",
+      "immunologist"
+    ],
+    "precertification_required": false,
+    "reasoning": "The patient must have been tested for latent tuberculosis when required by the prescribing information and if positive, the patient has begun therapy for latent TB. No precertification is mentioned.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [
+      "physician"
+    ],
+    "precertification_required": true,
+    "reasoning": "Initial authorization requires a monitoring plan and a complete medication regimen, indicating the need for a physician's involvement. Reauthorization also requires documentation from a physician.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [
+      "Dermatologist",
+      "Rheumatologist",
+      "Gastroenterologist"
+    ],
+    "precertification_required": true,
+    "reasoning": "Precertification is required for initial authorization and reauthorization of Stelara under various indications.",
+    "confidence": 0.95
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [
+      "sleep specialist"
+    ],
+    "precertification_required": false,
+    "reasoning": "The policy for STELARA requires a sleep specialist to diagnose narcolepsy and a 30-day trial and failure of modafinil, methylphenidate or dextroamphetamine before approval. There are no TB testing or precertification requirements mentioned.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [
+      "Dermatologist: plaque psoriasis and psoriatic arthritis",
+      "Rheumatologist: psoriatic arthritis",
+      "Gastroenterologist: Crohn\u2019s disease, ulcerative colitis and immune checkpoint inhibitor-related toxicity",
+      "Hematologist or oncologist: immune checkpoint inhibitor-related toxicity"
+    ],
+    "precertification_required": false,
+    "reasoning": "",
+    "confidence": 0.95
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "CIMZIA",
+    "tb_test_required": false,
+    "specialist_types": [],
+    "precertification_required": false,
+    "reasoning": "No specific requirements for TB testing, specialist types or precertification were found in the provided drug access criteria.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "STELARA",
+    "tb_test_required": false,
+    "specialist_types": [
+      "Rheumatologist"
+    ],
+    "precertification_required": true,
+    "reasoning": "The guideline mentions the need for precertification, and specifies rheumatologists as specialists involved in the treatment of juvenile idiopathic arthritis (JIA) which includes psoriatic arthritis.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "AMJEVITA",
+    "tb_test_required": true,
+    "specialist_types": [],
+    "precertification_required": false,
+    "reasoning": "The drug requires TB testing as part of the clinical access requirements.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "COSENTYX",
+    "tb_test_required": true,
+    "specialist_types": [
+      "board certified dermatologist"
+    ],
+    "precertification_required": true,
+    "reasoning": "TB testing is required as part of the initial criteria, and prior authorization is required for the drug.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "ENBREL",
+    "tb_test_required": false,
+    "specialist_types": [
+      "dermatologist",
+      "hematologist",
+      "oncologist",
+      "transplant center physician"
+    ],
+    "precertification_required": true,
+    "reasoning": "",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Clinical Access",
+    "brand": "REMICADE",
+    "tb_test_required": true,
+    "specialist_types": [
+      "Site of Service specialty infusion program"
+    ],
+    "precertification_required": false,
+    "reasoning": "The policy states that patient must be evaluated and screened for latent tuberculosis infection prior to initiating treatment.",
+    "confidence": 1.0
+  }
+]

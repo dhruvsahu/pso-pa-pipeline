@@ -1,0 +1,16 @@
+brand,minimum_age,tb_test_expected,specialist_required,quantity_limit_expected,step_therapy_expected,reauthorization_expected,preferred_indication,drug_class
+STELARA,>=6,Yes,No,No,No,No,PsO,IL-12/23
+BIMZELX,>=18,Yes,No,No,No,No,PsO,IL-17
+TREMFYA,>=18,Yes,No,No,No,No,PsO,IL-23
+SKYRIZI,>=18,Yes,No,No,No,No,PsO,IL-23
+OTEZLA,>=18,No,No,No,No,No,PsO,PDE4
+YESINTEK,>=6,Yes,No,No,No,No,PsO,IL-12/23
+OTULFI,>=6,Yes,No,No,No,No,PsO,IL-12/23
+ENBREL,>=4,Yes,No,No,No,No,PsO,TNF
+ILUMYA,>=18,Yes,No,No,No,No,PsO,IL-23
+ACITRETIN,>=18,No,No,No,No,No,PsO,Retinoid
+AMJEVITA,>=18,Yes,No,No,No,No,PsO,TNF
+SILIQ,>=18,Yes,No,No,No,No,PsO,IL-17
+CIMZIA,>=18,Yes,No,No,No,No,PsO,TNF
+COSENTYX,>=6,Yes,No,No,No,No,PsO,IL-17
+REMICADE,>=18,Yes,No,No,No,No,PsO,TNF

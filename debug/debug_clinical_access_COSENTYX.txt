@@ -1,0 +1,107 @@
+
+
+===== PAGE 2 =====
+
+  
+POLICY
+Prior Authorization is required.
+The use of samples by an individual will not be considered current or stable therapy to satisfy Medical
+Policy requirements.
+  
+Hadlima and Simlandi are the adalimumab formulary options effective 01/01/2025. 
+The following medications are not covered on any BCBSMS Formulary:
+Abrilada (adalimumab-afzb)
+Amjevita (adalimumab-atto)
+Avsola (infliximab-axxq)
+Bimzelx (bimekizumab-bkzx)
+Cyltezo (adalimumab-adbm)
+Hulio (adalimumab-fkjp)
+Humira (adalimumab)
+Hyrimoz (adalimumab-adaz)
+Idacio (adalimumab-aacf)
+Renflexis (infliximab-abda)
+Sotyktu (deucravacitinib)
+Vtama (tapinarof)
+Yuflyma (adalimumab-aaty)
+Yusimry (adalimumab-aqvh)
+    
+Initial Criteria
+The requested agent may be considered medically necessary when ALL of the following criteria are met:
+1. ONE of the following:
+a. The individual is 18 years of age or older;
+b. The individual is 4 years of age or older and the request is for Enbrel; OR
+c. The individual is 6 years of age or older and the request is for Cosentyx, Stelara, or Taltz;
+2. The individual has a diagnosis of chronic plaque psoriasis, determined by a board certified dermatologist,
+present for greater than 1 year and involving 10% or more of total body surface area;
+3. ONE of the following:
+a. The individual has failed (see definition of Failure in Policy Guidelines section) previous treatment
+with at least ONE of the listed conventional agents;
+b. The individual has an FDA-labeled contraindication or hypersensitivity to ALL conventional agents;
+OR
+c. There is documentation that the individual is currently being treated with the requested agent (use
+of samples or vouchers/coupons is not approvable);
+4. If request is for Stelara 90mg, the individual weighs >100kg;
+5. If request is for a non-preferred agent, then ONE of the following:
+a. The individual's medication history indicates trial and failure of the required number of preferred
+biologic agents (See Preferred Agent table) unless there is an FDA-labeled contraindication or
+hypersensitivity to all of the required preferred agents; OR
+39966 - Travel and Lodging Reimbursement
+Policy.pdf)
+Check Prescription Drug Prior Authorization
+Request » (/im-a-provider/prior-
+authorization-status?header=PA)
+Check Prescription Drug Benefit Appeal »
+(/im-a-provider/prior-authorization-status?
+header=BA)
+Medical Services Requiring Prior
+Authorization »
+(https://webstatic.bcbsms.com/pdf/Medical_Servi
+Voucher Inquiry » (/im-a-provider/voucher-
+inquiry)
+
+
+
+===== PAGE 3 =====
+
+b. The request is for a FDA-labeled indication that is not covered by the preferred products;
+6. The individual is not currently being treated with another biologic immunomodulatory agent (i.e., TNF-
+inhibitor, IL-inhibitor, anti IgE antibody, etc.) or Otezla;
+7. The individual does not have any contraindication(s) to therapy with the requested agent;
+8. The individual has been tested for latent TB when required by the prescribing information for the requested
+agent AND if positive, the individual has begun therapy for active TB; AND
+9. The prescribed dosage is within the program quantity limits based on FDA approved labeled dosage.
+ 
+Length of Approval: 12 months with exceptions detailed below
+Siliq- initial approval 16 weeks and requires documentation of adequate response for continued treatment
+for 12 months
+ 
+Renewal Criteria
+ 
+The requested agents may be approved for renewal when ALL of the following criteria are met:
+1. The individual has been previously approved for therapy through BCBSMS PA process;
+2. The individual has shown clinical improvement (i.e. slowing of disease progression or decrease in symptom
+severity and/or frequency);
+3. The individual does not have any FDA-labeled contraindication(s) to therapy with the requested agent;
+4. The individual is not currently being treated with another biologic immunomodulatory agent (i.e., TNF-
+inhibitor, IL-inhibitor, anti IgE antibody, etc.) or Otezla; AND
+5. The prescribed dosage is within the program quantity limits based on FDA-approved labeled dosage.
+Length of Approval: 12 months
+   
+Services related to delivery and/or administration of a medication which has not been approved through the
+BCBSMS PA review process will be considered not medically necessary.
+  
+POLICY EXCEPTIONS
+State Health Plan (State and School Employees) Participants
+  
+POLICY GUIDELINES
+The coverage guidelines outlined in the Medical Policy Manual should not be used in lieu of the Member's specific
+benefit plan language.
+Medication failure is defined as disease progression despite maximally tolerated dose (>3 consecutive months
+use) as appropriate for disease state being treated. Experience of common side effects of medication will not be
+considered medication failure for the purpose of this review.
+Medically Necessary is defined as those services, treatments, procedures, equipment, drugs, devices, items or
+supplies furnished by a covered Provider that are required to identify or treat a Member's illness, injury or Mental
+Health Disorders, and which Company determines are covered under this Benefit Plan based on the criteria as
+follows in A through D:
+A. consistent with the symptoms or diagnosis and treatment of the Member's condition, illness, or injury;
+and

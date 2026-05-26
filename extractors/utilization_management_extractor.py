@@ -1,0 +1,549 @@
+from pyexpat import model
+
+import fitz
+import json
+from ollama import chat
+import re
+from extractors.model_router import (
+    ModelRouter
+)
+
+class UtilizationManagementExtractor:
+
+    def __init__(self):
+        
+        self.model_router = (
+            ModelRouter()
+        )
+
+        # -------------------------------------------------
+        # RETRIEVAL KEYWORDS
+        # -------------------------------------------------
+
+        self.retrieval_keywords = [
+
+            "quantity limit",
+            "quantity level limit",
+            "dose limit",
+            "maximum dose",
+            "maximum quantity",
+            "frequency limit",
+            "site of care",
+            "split fill",
+            "units per",
+            "vials",
+            "syringe",
+            "injection"
+        ]
+
+        # -------------------------------------------------
+        # EXCLUSION KEYWORDS
+        # -------------------------------------------------
+
+        self.exclusion_keywords = [
+
+            "references",
+            "appendix",
+            "policy history",
+            "coding",
+            "billing",
+            "hcpcs",
+            "ndc"
+        ]
+
+    # =====================================================
+    # PAGE EXTRACTION
+    # =====================================================
+
+    def extract_pages(
+        self,
+        pdf_path
+    ):
+
+        doc = fitz.open(
+            pdf_path
+        )
+
+        pages = []
+
+        for i in range(len(doc)):
+
+            text = doc[i].get_text()
+
+            pages.append({
+
+                "page_number": i + 1,
+
+                "text": text
+            })
+
+        return pages
+
+    # =====================================================
+    # CONTEXT RETRIEVAL
+    # =====================================================
+
+    def extract_utilization_context(
+        self,
+        pages,
+        brand
+    ):
+
+        collected_pages = []
+
+        for page in pages:
+
+            text = page["text"]
+
+            lower_text = text.lower()
+
+            # ---------------------------------------------
+            # EXCLUSION FILTER
+            # ---------------------------------------------
+
+            if any(
+                exclusion in lower_text
+                for exclusion in (
+                    self.exclusion_keywords
+                )
+            ):
+
+                continue
+
+            # ---------------------------------------------
+            # BRAND MATCH
+            # ---------------------------------------------
+
+            brand_match = (
+                brand.lower()
+                in lower_text
+            )
+
+            # ---------------------------------------------
+            # UTILIZATION MATCH
+            # ---------------------------------------------
+
+            utilization_match = any(
+
+                keyword in lower_text
+
+                for keyword in (
+                    self.retrieval_keywords
+                )
+            )
+
+            # ---------------------------------------------
+            # KEEP PAGE
+            # ---------------------------------------------
+
+            if (
+                brand_match
+                and utilization_match
+            ):
+
+                collected_pages.append(
+
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} =====\n\n"
+
+                    + text
+                )
+
+        return "\n".join(
+            collected_pages
+        )
+
+    # =====================================================
+    # LLM EXTRACTION
+    # =====================================================
+
+    def extract_with_llm(
+        self,
+        brand,
+        context
+    ):
+
+        context = context[:20000]
+
+        prompt = f"""
+You are analyzing a healthcare prior authorization policy.
+
+Target Drug:
+{brand}
+
+Policy Context:
+{context}
+
+Your task is to extract utilization management information
+ONLY for the TARGET DRUG.
+
+EXTRACT:
+
+1. Quantity limits explicitly documented in policy
+
+QUANTITY LIMIT RULES:
+
+Capture ONLY statements explicitly described as:
+- quantity limit
+- quantity limits
+- QL
+- quantity restriction
+
+DO NOT capture:
+- dosage limits
+- dosing limits
+- dose escalation language
+- frequency recommendations
+- administration schedules
+
+UNLESS they are explicitly labeled as
+quantity limits.
+
+IMPORTANT:
+- Extract quantity limit language EXACTLY as written
+- Ignore unrelated drugs
+- Ignore references
+- Ignore HCPCS/NDC sections
+- Ignore examples
+- Ignore dosage-only sections
+- Use ONLY evidence from provided context
+
+NORMALIZATION RULES:
+
+Return:
+- ARRAY OF STRINGS
+    if quantity limits exist
+
+- "No"
+    if policy explicitly indicates no quantity limits
+
+- "NA"
+    if no usable quantity limit information exists
+
+Return STRICT JSON ONLY.
+
+Required JSON format:
+
+{{
+    "quantity_limits": "NA",
+    "source_statements": [],
+    "reasoning": "",
+    "confidence": 0.0
+}}
+
+IMPORTANT:
+quantity_limits must be EXACTLY ONE OF:
+- array of strings
+- "No"
+- "NA"
+"""
+        model = self.model_router.select_model(
+            context
+        )
+
+        print(f"[MODEL SELECTED] {model}")
+
+        response = self.model_router.generate(
+
+            prompt=prompt,
+
+            context=context
+        )
+
+        return response
+
+    # =====================================================
+    # CLEAN JSON OUTPUT
+    # =====================================================
+
+    def clean_json_output(
+        self,
+        text
+    ):
+
+        cleaned = (
+
+            text
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+        return cleaned
+
+    def extract(
+        self,
+        pages,
+        brand
+    ):
+
+        try:
+
+            # ---------------------------------------------
+            # CONTEXT RETRIEVAL
+            # ---------------------------------------------
+
+            context = (
+                self.extract_utilization_context(
+                    pages,
+                    brand
+                )
+            )
+
+            # ---------------------------------------------
+            # DEBUG FILE
+            # ---------------------------------------------
+
+            debug_file = (
+
+                f"debug/"
+                f"debug_utilization_{brand}.txt"
+            )
+
+            with open(
+                debug_file,
+                "w",
+                encoding="utf-8"
+            ) as f:
+
+                f.write(context)
+
+            # ---------------------------------------------
+            # LLM EXTRACTION
+            # ---------------------------------------------
+
+            llm_output = (
+                self.extract_with_llm(
+                    brand,
+                    context
+                )
+            )
+
+            cleaned_output = (
+                self.clean_json_output(
+                    llm_output
+                )
+            )
+
+            parsed_output = json.loads(
+                cleaned_output
+            )
+
+            # ---------------------------------------------
+            # FINAL OUTPUT
+            # ---------------------------------------------
+
+            return {
+
+                "parameter_group": (
+                    "Utilization Management"
+                ),
+
+                "brand": brand,
+
+                "quantity_limits":
+
+                    parsed_output.get(
+                        "quantity_limits",
+                        "NA"
+                    ),
+
+                "source_statements":
+
+                    parsed_output.get(
+                        "source_statements",
+                        []
+                    ),
+
+                "reasoning":
+
+                    parsed_output.get(
+                        "reasoning"
+                    ),
+
+                "confidence":
+
+                    parsed_output.get(
+                        "confidence"
+                    )
+            }
+
+        except Exception as e:
+
+            return {
+
+                "parameter_group": (
+                    "Utilization Management"
+                ),
+
+                "brand": brand,
+
+                "quantity_limits": "NA",
+
+                "source_statements": [],
+
+                "reasoning": str(e),
+
+                "confidence": 0
+            }
+
+# =========================================================
+# TEST
+# =========================================================
+
+if __name__ == "__main__":
+
+    extractor = (
+        UtilizationManagementExtractor()
+    )
+
+    test_cases = [
+
+        {
+            "pdf": "378692-5003182.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "378792-5004240.pdf",
+            "brand": "TREMFYA"
+        },
+
+        {
+            "pdf": "379899-5030421.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "51842-4975862.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "55182-4590747.pdf",
+            "brand": "SILIQ"
+        },
+
+        {
+            "pdf": "56061-4538520.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "56263-4803097.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "56403-5061730.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "58918-4969735.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "66156-4274314.pdf",
+            "brand": "CIMZIA"
+        },
+
+        {
+            "pdf": "84074-5053811.pdf",
+            "brand": "STELARA"
+        },
+
+        {
+            "pdf": "8889-4641730.pdf",
+            "brand": "AMJEVITA"
+        },
+
+        {
+            "pdf": "8898-4735285.pdf",
+            "brand": "COSENTYX"
+        },
+
+        {
+            "pdf": "9023-4381765.pdf",
+            "brand": "ENBREL"
+        },
+
+        {
+            "pdf": "9026-4997564.pdf",
+            "brand": "REMICADE"
+        }
+    ]
+
+    BASE_FOLDER = "Sample_PsO_ADS_Track"
+
+    all_results = []
+
+    for idx, test in enumerate(test_cases):
+
+        pdf_path = (
+            f"{BASE_FOLDER}/"
+            f"{test['pdf']}"
+        )
+
+        brand = test["brand"]
+
+        print("\n" + "=" * 80)
+        print(
+            f"[{idx+1}/{len(test_cases)}] "
+            f"PROCESSING: {brand}"
+        )
+        print("=" * 80)
+
+        try:
+
+            result = extractor.extract(
+
+                pdf_path=pdf_path,
+
+                brand=brand
+            )
+
+            all_results.append(result)
+
+            print(
+                json.dumps(
+                    result,
+                    indent=2
+                )
+            )
+
+        except Exception as e:
+
+            print(
+                f"FAILED: {pdf_path}"
+            )
+
+            print(str(e))
+
+    # -------------------------------------------------
+    # SAVE RESULTS
+    # -------------------------------------------------
+
+    with open(
+
+        "utilization_management_results.json",
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as f:
+
+        json.dump(
+
+            all_results,
+
+            f,
+
+            indent=2
+        )
+
+    print("\n" + "=" * 80)
+    print("COMPLETE")
+    print("=" * 80)

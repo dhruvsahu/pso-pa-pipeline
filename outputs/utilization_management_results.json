@@ -1,0 +1,197 @@
+[
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "Expecting property name enclosed in double quotes: line 107 column 13 (char 4226)",
+    "confidence": 0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "TREMFYA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information was found for TREMFYA in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information was found for STELARA in the provided context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information was found for STELARA in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "SILIQ",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific quantity limits, dose limits, frequency limits, site of care restrictions or split fill requirements mentioned in the provided text for any drug.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "The provided policy does not contain explicit information on quantity limits, dose limits, frequency limits, site of care restrictions, or split fill requirements for the target drug STELARA.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information for STELARA found in the provided context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific quantity, dose, frequency, site of care restrictions or split fill requirements mentioned for STELARA in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information for STELARA found in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "CIMZIA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No relevant utilization management information found for CIMZIA in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "STELARA",
+    "quantity_limits": [],
+    "dose_limits": [
+      {
+        "weight_range": "<60 kg",
+        "dose": "0.75 mg/kg"
+      },
+      {
+        "weight_range": "\u226560 kg and <100 kg",
+        "dose": "45 mg or 0.75 mg/kg"
+      },
+      {
+        "weight_range": "\u2265100 kg",
+        "dose": "90 mg"
+      }
+    ],
+    "frequency_limits": [
+      {
+        "condition": "Pediatric Subcutaneous Loading Dose",
+        "interval": "weeks 0 & 4, then begin maintenance dosing 12 weeks later"
+      },
+      {
+        "condition": "Pediatric Subcutaneous Maintenance Dose",
+        "interval": "every 12 weeks"
+      },
+      {
+        "condition": "Crohn\u2019s Disease & Ulcerative Colitis Induction",
+        "interval": "8 weeks after initial IV dose, then every 8 weeks thereafter"
+      },
+      {
+        "condition": "Crohn\u2019s Disease & Ulcerative Colitis Dose Escalation",
+        "interval": "90 mg subcutaneously every 4 weeks (up to 3 months)"
+      }
+    ],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "Extracted dose and frequency limits as specified in the policy, ignoring unrelated content.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "AMJEVITA",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No quantity, dose, frequency limits or site of care restrictions or split fill requirements were found for any drug in the provided text.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "COSENTYX",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information for COSENTYX was found in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "ENBREL",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific quantity, dose, frequency or site of care restrictions were mentioned in the provided criteria for Enbrel.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Utilization Management",
+    "brand": "REMICADE",
+    "quantity_limits": [],
+    "dose_limits": [],
+    "frequency_limits": [],
+    "site_of_care_restrictions": [],
+    "split_fill_requirements": [],
+    "reasoning": "No specific utilization management information for REMICADE found in the provided context.",
+    "confidence": 0.0
+  }
+]

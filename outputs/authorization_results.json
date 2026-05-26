@@ -1,0 +1,267 @@
+[
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": 12,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 6,
+    "reauthorization_requirements": [
+      "Breastfeeding",
+      "Significant comorbidity prohibits use of systemic agents (e.g., liver or kidney disease, blood dyscrasias, uncontrolled hypertension)",
+      "Hypersensitivity",
+      "History of intolerance or adverse event"
+    ],
+    "reasoning": "The policy specifies different initial and renewal authorization durations for Stelara based on indications. It also outlines specific conditions that must be documented for reauthorization.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "TREMFYA",
+    "initial_authorization_months": null,
+    "reauthorization_required": null,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "No explicit information found for TREMFYA in the provided policy context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": null,
+    "reauthorization_required": null,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "No specific authorization requirements found for STELARA in the provided context.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": null,
+    "reauthorization_required": null,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "Insufficient information provided in the policy context to extract explicit requirements for STELARA.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "SILIQ",
+    "initial_authorization_months": null,
+    "reauthorization_required": false,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "The provided policy does not contain explicit information about initial authorization duration, reauthorization requirements or duration.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": null,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 4,
+    "reauthorization_requirements": [
+      {
+        "requirement": "A letter of medical necessity with chart notes demonstrating therapeutic benefit."
+      },
+      {
+        "requirement": "Baseline and current PASI score (or equivalent, for Ps)."
+      },
+      {
+        "requirement": "Baseline and current number of tender and/or swollen joints, Health Assessment Questionnaire Disability Index (HAQ-DI) or equivalent, CRP, etc. (for PsA)"
+      },
+      {
+        "requirement": "Baseline Crohn\u2019s Disease Activity Score (CADI) has been submitted at baseline and at 6 months of therapy."
+      },
+      {
+        "requirement": "Documentation of tolerance and absence of adverse events."
+      }
+    ],
+    "reasoning": "The policy explicitly states that a reauthorization request for use beyond 4 weeks must include specific documents.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": 6,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 12,
+    "reauthorization_requirements": [
+      "Demonstrates positive clinical response to therapy as evidenced by ONE of the following [1-3]: Reduction in the body surface area (BSA) involvement from baseline, Improvement in symptoms (e.g., pruritus, inflammation) from baseline"
+    ],
+    "reasoning": "Extracted requirements are explicitly stated for reauthorization.",
+    "confidence": 0.95
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": null,
+    "reauthorization_required": null,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "No explicit authorization duration or reauthorization requirements were found for the target drug in the provided policy.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": 12,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 12,
+    "reauthorization_requirements": [
+      {
+        "indications": [
+          "Plaque psoriasis (PsO)"
+        ],
+        "requirements": [
+          "Reduction in body surface area (BSA) affected from baseline",
+          "Improvement in signs and symptoms of the condition"
+        ]
+      },
+      {
+        "indications": [
+          "Psoriatic arthritis (PsA)"
+        ],
+        "requirements": [
+          "Number of swollen joints",
+          "Number of tender joints",
+          "Dactylitis",
+          "Enthesitis",
+          "Skin and/or nail involvement",
+          "Functional status",
+          "C-reactive protein (CRP)"
+        ]
+      },
+      {
+        "indications": [
+          "Crohn\u2019s Disease (CD)"
+        ],
+        "requirements": [
+          "Remission for adult members",
+          "Abdominal pain or tenderness",
+          "Diarrhea",
+          "Body weight",
+          "Abdominal mass",
+          "Hematocrit",
+          "Appearance of the mucosa on endoscopy, computed tomography enterography (CTE), magnetic resonance enterography (MRE), or intestinal ultrasound",
+          "Improvement on a disease activity scoring tool (e.g., Crohn\u2019s Disease Activity Index [CDAI] score)"
+        ]
+      },
+      {
+        "indications": [
+          "Ulcerative colitis"
+        ],
+        "requirements": [
+          "Remission for adult members",
+          "Abdominal pain or tenderness",
+          "Diarrhea",
+          "Body weight",
+          "Abdominal mass",
+          "Hematocrit",
+          "Appearance of the mucosa on endoscopy, computed tomography enterography (CTE), magnetic resonance enterography (MRE), or intestinal ultrasound",
+          "Improvement on a disease activity scoring tool (e.g., Crohn\u2019s Disease Activity Index [CDAI] score)"
+        ]
+      }
+    ],
+    "reasoning": "The policy specifies reauthorization requirements based on the improvement in specific clinical parameters for each indication.",
+    "confidence": 0.95
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "CIMZIA",
+    "initial_authorization_months": null,
+    "reauthorization_required": false,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "The provided document did not contain explicit authorization or reauthorization requirements for the target drug.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "STELARA",
+    "initial_authorization_months": null,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 3,
+    "reauthorization_requirements": [
+      "Shown an initial response to therapy",
+      "Received the initial intravenous loading dose as specified above",
+      "Received a minimum of one subcutaneous maintenance dose as specified above",
+      "Responded to therapy (by treatment week 16*) with subsequent loss of response",
+      "ustekinumab trough levels (if available) <4.5 micrograms/mL"
+    ],
+    "reasoning": "The policy explicitly mentions that reauthorization is required for certain patients based on specific conditions and a maximum interval between doses.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "AMJEVITA",
+    "initial_authorization_months": null,
+    "reauthorization_required": null,
+    "reauthorization_duration_months": null,
+    "reauthorization_requirements": [],
+    "reasoning": "No explicit reauthorization requirements or duration were found in the provided text.",
+    "confidence": 0.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "COSENTYX",
+    "initial_authorization_months": 12,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 12,
+    "reauthorization_requirements": [
+      {
+        "requirement": "The individual has been previously approved for therapy through BCBSMS PA process",
+        "type": "Historical Approval"
+      },
+      {
+        "requirement": "The individual has shown clinical improvement (i.e. slowing of disease progression or decrease in symptom severity and/or frequency)",
+        "type": "Clinical Improvement"
+      },
+      {
+        "requirement": "The individual does not have any FDA-labeled contraindication(s) to therapy with the requested agent",
+        "type": "No Contraindications"
+      },
+      {
+        "requirement": "The individual is not currently being treated with another biologic immunomodulatory agent (i.e., TNF-inhibitor, IL-inhibitor, anti IgE antibody, etc.) or Otezla",
+        "type": "No Concurrent Biologics"
+      },
+      {
+        "requirement": "The prescribed dosage is within the program quantity limits based on FDA-approved labeled dosage.",
+        "type": "Dosage Compliance"
+      }
+    ],
+    "reasoning": "The policy explicitly outlines the reauthorization criteria for COSENTYX, detailing multiple requirements that must be met for continued coverage.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "ENBREL",
+    "initial_authorization_months": null,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 12,
+    "reauthorization_requirements": [
+      {
+        "condition": "The patient has had a response per provider.",
+        "indication": "For conditions approved under the Recommended Authorization Criteria section."
+      }
+    ],
+    "reasoning": "Reauthorization is required for all indications not explicitly covered by initial approval criteria, based on specific reauthorization duration and requirements mentioned in the policy.",
+    "confidence": 1.0
+  },
+  {
+    "parameter_group": "Authorization",
+    "brand": "REMICADE",
+    "initial_authorization_months": null,
+    "reauthorization_required": true,
+    "reauthorization_duration_months": 36,
+    "reauthorization_requirements": [
+      "Patient must try and have an inadequate response, contraindication, or intolerance to a 3-month trial of AVSOLA AND INFLECTRA",
+      "Patient would have a life-threatening situation if required to meet step therapy requirements",
+      "Patient continues to meet the universal and other indication-specific relevant criteria identified in section III",
+      "Duration of authorization has not been exceeded (refer to Section I)",
+      "Absence of unacceptable toxicity from the drug"
+    ],
+    "reasoning": "The policy explicitly states that coverage can be renewed based on specific criteria, indicating reauthorization is required.",
+    "confidence": 1.0
+  }
+]

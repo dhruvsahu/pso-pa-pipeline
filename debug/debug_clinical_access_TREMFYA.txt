@@ -1,0 +1,96 @@
+
+
+===== PAGE 1 =====
+
+TREMFYA (guselkumab) 
+Line(s) of Business: 
+HMO; PPO; QUEST 
+Original Effective Date: 
+10/01/2020 
+Current Effective Date: 
+04/01/2025 
+POLICY 
+A. INDICATIONS
+The indications below including FDA-approved indications and compendial uses are considered a covered 
+benefit provided that all the approval criteria are met and the member has no exclusions to the prescribed 
+therapy. 
+FDA-Approved Indications 
+•
+Treatment of adult patients with moderate-to-severe plaque psoriasis (PsO) who are candidates for
+systemic therapy or phototherapy
+•
+Treatment of adult patients with active psoriatic arthritis (PsA)
+•
+Treatment of moderately to severely active ulcerative colitis (UC) in adults
+B. PRESCRIBER SPECIALTIES
+This medication must be prescribed by or in consultation with one of the following: 
+1.
+Dermatologist
+a.
+Plaque psoriasis or psoriatic arthritis
+2.
+Rheumatologist
+a.
+Psoriatic arthritis
+3.
+Gastroenterologist
+a.
+Ulcerative colitis
+C. CRITERIA FOR INITIAL APPROVAL
+1.
+Plaque psoriasis (PsO)
+a.
+Authorization of 12 months may be granted for adult members who have previously received a
+biologic or targeted synthetic drug (e.g., Sotyktu, Otezla) indicated for the treatment of moderate to
+severe plaque psoriasis.
+b.
+Authorization of 12 months may be granted for adult members for treatment of moderate to severe
+plaque psoriasis when any of the following criteria is met:
+i.
+Crucial body areas (e.g., hands, feet, face, neck, scalp, genitals/groin, intertriginous areas) are
+affected
+ii.
+At least 10% of body surface area (BSA) is affected
+iii. At least 3% of body surface area (BSA) is affected and the member meets any of the following
+criteria:
+^
+
+
+===== PAGE 5 =====
+
+11. Menter A, Gelfand JM, Connor C, et al. Joint American Academy of Dermatology-National Psoriasis 
+Foundation guidelines of care for the management of psoriasis with systemic nonbiologic therapies. J Am 
+Acad Dermatol. 2020;82(6):1445-1486. 
+12. Talley NJ, Abreu MT, Achkar J, et al. An evidence-based systematic review on medical therapies for 
+inflammatory bowel disease. Am J Gastroenterol. 2011;106(Suppl 1):S2-S25. 
+13. Rubin DT, Ananthakrishnan AN, et al. 2019 ACG Clinical Guideline: Ulcerative Colitis in Adults. Am J 
+Gastroenterol. 2019;114:384-413. 
+14. Feuerstein JD, Isaacs KL, Schneider Y, et al. AGA Clinical Practice Guidelines on the Management of 
+Moderate to Severe Ulcerative Colitis. Gastroenterology. 2020;158:1450. 
+Document History 
+10/01/2020 
+Original effective date 
+5/14/2021 
+Removed Medicare LOB per SAD Exclusion List 
+05/2021 
+Updated continuation of therapy to align with HMSA’s Pharmacy Benefit 
+Manager standard 
+06/2021 
+Annual review 
+01/01/2022 
+Revision effective date 
+04/2022 
+Updated TB test requirements 
+06/2022 
+Annual review 
+09/01/2022 
+Revision effective date – Annual review and off-cycle update 
+07/2023 
+Annual review, removed HMSA’s Pharmacy Benefit Manager co-branding 
+02/01/2024 
+Revision effective date 
+07/2024 
+Annual review 
+04/01/2025 
+Revision effective date 
+^

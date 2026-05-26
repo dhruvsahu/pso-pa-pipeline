@@ -1,0 +1,74 @@
+[
+  {
+    "brand": "STELARA",
+    "filename": "377585-4984547.pdf",
+    "age": {
+      "parameter": "Age",
+      "brand": "STELARA",
+      "value": ">=6",
+      "source_statement": "Ustekinumab is indicated for moderate to severe plaque psoriasis in members 6 years or older",
+      "reasoning": "The policy explicitly identifies the target brand (Stelara) as being indicated for members 6 years or older, which satisfies the requirement to return the youngest explicit numerical age threshold.",
+      "confidence": 1.0,
+      "retrieved_pages": [
+        1,
+        3
+      ]
+    },
+    "step_therapy": {
+      "parameter": "Step Therapy",
+      "brand": "STELARA",
+      "reasoning": "Extracted step therapy requirements for Psoriasis and Psoriatic Arthritis based on the provided policy document for Stelara (Ustekinumab).",
+      "confidence": 1,
+      "retrieved_pages": [
+        2
+      ]
+    },
+    "authorization": {
+      "parameter_group": "Authorization",
+      "brand": "STELARA",
+      "initial_authorization_months": 6,
+      "reauthorization_required": "Yes",
+      "reauthorization_duration_months": 12,
+      "reauthorization_requirements": [
+        "The member has a continued benefit to therapy.",
+        "Extension requests where the ustekinumab did not have the full desired effect or considered a clinical failure will require clinical rationale for continuing."
+      ],
+      "reasoning": "The policy explicitly specifies an initial authorization of 6 months for Psoriasis. It includes language regarding 'Extensions requests', which constitutes a reauthorization process. The reauthorization duration is explicitly stated as up to 12 months, and the requirements are defined by the need for continued benefit or clinical rationale in cases of treatment failure.",
+      "confidence": 1.0
+    },
+    "utilization_management": {
+      "parameter_group": "Utilization Management",
+      "brand": "STELARA",
+      "quantity_limits": "NA",
+      "source_statements": [],
+      "reasoning": "The provided policy text for Stelara (ustekinumab) does not contain any mention of quantity limits, QLs, or quantity restrictions.",
+      "confidence": 1.0
+    },
+    "clinical_access": {
+      "parameter_group": "Clinical Access",
+      "brand": "STELARA",
+      "tb_test_required": "Yes",
+      "specialist_types": "NA",
+      "precertification_required": "Yes",
+      "source_statements": [
+        "Members should be screened for immunologic and infectious disease prior to initiating therapy.",
+        "Drugs Requiring Prior Authorization under the medical benefit: J3358 Stelara (ustekinumab intravenous injection, 1mg)"
+      ],
+      "reasoning": "The policy explicitly requires members to be screened for infectious disease (which includes TB screening in standard clinical practice for biologics) prior to initiation. Prior authorization is explicitly required as the drug is listed under 'Drugs Requiring Prior Authorization under the medical benefit'. No specific medical specialist types were mentioned in the provided text snippet.",
+      "confidence": 0.95
+    },
+    "access_quality": {
+      "brand": "STELARA",
+      "access_quality_score": 65,
+      "access_category": "FDA Parity",
+      "fda_alignment": "Favorable relative to FDA label",
+      "score_breakdown": [
+        "Specialist restriction applied",
+        "Precertification required",
+        "Reauthorization required",
+        "Quantity limits applied",
+        "Age restriction applied"
+      ]
+    }
+  }
+]
