@@ -184,7 +184,6 @@ for idx, test in enumerate(TEST_CASES):
         #     f"[TIME] Step Counter: "
         #     f"{round(time.time() - start, 2)}s"
         # )
-        time.sleep(20)
         # =================================================
         # AUTHORIZATION
         # =================================================
