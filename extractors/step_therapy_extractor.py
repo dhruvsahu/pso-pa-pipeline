@@ -743,7 +743,7 @@ Required JSON format:
             debug_file = (
 
                 f"debug/"
-                f"debug_utilization_{brand}.txt"
+                f"debug_step_therapy_{brand}.txt"
             )
 
             with open(

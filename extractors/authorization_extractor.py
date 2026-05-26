@@ -321,7 +321,7 @@ Duration fields may contain:
             debug_file = (
 
                 f"debug/"
-                f"debug_utilization_{brand}.txt"
+                f"debug_authorization_{brand}.txt"
             )
 
             with open(
