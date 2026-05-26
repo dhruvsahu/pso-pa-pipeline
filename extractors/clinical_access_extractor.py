@@ -1,6 +1,4 @@
-import fitz
 import json
-from ollama import chat
 from extractors.model_router import (
     ModelRouter
 )

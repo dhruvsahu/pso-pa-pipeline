@@ -1,7 +1,5 @@
-import fitz
 import re
 import json
-from ollama import chat
 import pandas as pd
 from extractors.model_router import (
     ModelRouter
