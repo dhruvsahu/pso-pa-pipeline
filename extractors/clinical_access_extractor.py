@@ -128,11 +128,14 @@ class ClinicalAccessExtractor:
 
             # ---------------------------------------------
             # KEEP PAGE
+            # Both conditions required to avoid pulling in
+            # context about unrelated drugs that happen to
+            # mention TB test or specialist keywords.
             # ---------------------------------------------
 
             if (
                 brand_match
-                or access_match
+                and access_match
             ):
 
                 collected_pages.append(
