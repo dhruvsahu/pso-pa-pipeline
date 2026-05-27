@@ -11,10 +11,6 @@ from extractors.step_therapy_extractor import (
     StepTherapyExtractor
 )
 
-from extractors.step_counter import (
-    StepCounter
-)
-
 from extractors.authorization_extractor import (
     AuthorizationExtractor
 )
@@ -66,18 +62,6 @@ age_extractor = (
 
 therapy_extractor = (
     StepTherapyExtractor()
-)
-
-step_counter = (
-
-    StepCounter(
-
-        therapy_dictionary_path=(
-
-            "assets/"
-            "therapy_dictionary_normalized.csv"
-        )
-    )
 )
 
 authorization_extractor = (
@@ -160,32 +144,6 @@ for idx, test in enumerate(TEST_CASES):
             f"{round(time.time() - start, 2)}s"
         )
         time.sleep(20)
-        # =================================================
-        # STEP COUNTING
-        # =================================================
-        # start = time.time()
-        # step_count_result = (
-        #     step_counter.extract(
-
-        #         therapy_sentences=(
-        #             therapy_result.get(
-        #                 "therapy_sentences",
-        #                 []
-        #             )
-        #         ),
-
-        #         raw_therapy_mentions=(
-        #             therapy_result.get(
-        #                 "raw_therapy_mentions",
-        #                 []
-        #             )
-        #         )
-        #     )
-        # )
-        # print(
-        #     f"[TIME] Step Counter: "
-        #     f"{round(time.time() - start, 2)}s"
-        # )
         # =================================================
         # AUTHORIZATION
         # =================================================
