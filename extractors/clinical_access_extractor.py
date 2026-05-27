@@ -430,6 +430,23 @@ class ClinicalAccessExtractor:
             )
 
             # ---------------------------------------------
+            # EMPTY CONTEXT GUARD
+            # ---------------------------------------------
+
+            if not context.strip():
+
+                return {
+                    "parameter_group": "Clinical Access",
+                    "brand": brand,
+                    "tb_test_required": "NA",
+                    "specialist_types": "NA",
+                    "precertification_required": "NA",
+                    "source_statements": [],
+                    "reasoning": "No clinical access context found in policy",
+                    "confidence": 0.0
+                }
+
+            # ---------------------------------------------
             # LLM EXTRACTION
             # ---------------------------------------------
 
