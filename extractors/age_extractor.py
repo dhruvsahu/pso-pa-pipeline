@@ -3,6 +3,10 @@ import json
 from extractors.model_router import (
     ModelRouter
 )
+from utils.extractor_utils import (
+    clean_json_output,
+    write_debug_context
+)
 
 class AgeExtractor:
 
@@ -300,33 +304,14 @@ Where:
         return response
 
     # =====================================================
-    # JSON CLEANUP
-    # =====================================================
-
-    def clean_json_output(self, llm_output):
-
-        llm_output = llm_output.strip()
-
-        llm_output = llm_output.replace(
-            "```json",
-            ""
-        )
-
-        llm_output = llm_output.replace(
-            "```",
-            ""
-        )
-
-        return llm_output
-
-    # =====================================================
     # MAIN EXTRACTION METHOD
     # =====================================================
 
     def extract(
         self,
         pages,
-        brand
+        brand,
+        pdf_name=""
     ):
 
         try:
@@ -373,6 +358,17 @@ Where:
             )
 
             # -----------------------------------------
+            # DEBUG FILE
+            # -----------------------------------------
+
+            write_debug_context(
+                "age",
+                brand,
+                context,
+                pdf_name
+            )
+
+            # -----------------------------------------
             # LLM Resolution
             # -----------------------------------------
 
@@ -385,7 +381,7 @@ Where:
             # Cleanup JSON
             # -----------------------------------------
 
-            cleaned_output = self.clean_json_output(
+            cleaned_output = clean_json_output(
                 llm_output
             )
 

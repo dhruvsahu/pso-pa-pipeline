@@ -1,8 +1,11 @@
-import re
 import json
 import pandas as pd
 from extractors.model_router import (
     ModelRouter
+)
+from utils.extractor_utils import (
+    clean_json_output,
+    write_debug_context
 )
 
 class StepTherapyExtractor:
@@ -251,51 +254,14 @@ Required JSON format:
         return response
 
     # =====================================================
-    # CLEAN JSON
-    # =====================================================
-
-    def clean_json_output(
-        self,
-        llm_output
-    ):
-        print("cleaning json output was used")
-
-        llm_output = llm_output.strip()
-
-        # Strip markdown code fences (```json...``` or ```...```)
-        llm_output = re.sub(
-            r"```(?:json)?\s*",
-            "",
-            llm_output,
-            flags=re.IGNORECASE
-        )
-
-        llm_output = llm_output.replace(
-            "```",
-            ""
-        )
-
-        # Extract the first complete JSON object {...}
-        # in case the LLM prepends or appends prose
-        match = re.search(
-            r"\{.*\}",
-            llm_output,
-            flags=re.DOTALL
-        )
-
-        if match:
-            return match.group(0).strip()
-
-        return llm_output.strip()
-
-    # =====================================================
     # MAIN EXTRACTION
     # =====================================================
 
     def extract(
         self,
         pages,
-        brand
+        brand,
+        pdf_name=""
     ):
         print("main extraction was used")
 
@@ -379,7 +345,7 @@ Required JSON format:
             )
 
             cleaned_output = (
-                self.clean_json_output(
+                clean_json_output(
                     llm_output
                 )
             )
@@ -430,19 +396,12 @@ Required JSON format:
             # DEBUG CONTEXT
             # -----------------------------------------
 
-            debug_file = (
-
-                f"debug/"
-                f"debug_step_therapy_{brand}.txt"
+            write_debug_context(
+                "step_therapy",
+                brand,
+                context,
+                pdf_name
             )
-
-            with open(
-                debug_file,
-                "w",
-                encoding="utf-8"
-            ) as f:
-
-                f.write(context)
 
             # -----------------------------------------
             # LLM EXTRACTION
@@ -456,7 +415,7 @@ Required JSON format:
             )
 
             cleaned_output = (
-                self.clean_json_output(
+                clean_json_output(
                     llm_output
                 )
             )
@@ -722,7 +681,7 @@ if __name__ == "__main__":
     print("\n===== RAW LLM OUTPUT 1 (requirements) =====")
     print(raw_llm_requirements)
 
-    cleaned_1 = extractor.clean_json_output(raw_llm_requirements)
+    cleaned_1 = clean_json_output(raw_llm_requirements)
     print("\n===== CLEANED JSON 1 (requirements) =====")
     print(cleaned_1)
 
@@ -740,7 +699,7 @@ if __name__ == "__main__":
     print("\n===== RAW LLM OUTPUT 2 (resolve) =====")
     print(raw_llm_resolve)
 
-    cleaned_2 = extractor.clean_json_output(raw_llm_resolve)
+    cleaned_2 = clean_json_output(raw_llm_resolve)
     print("\n===== CLEANED JSON 2 (resolve) =====")
     print(cleaned_2)
 
