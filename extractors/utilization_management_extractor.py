@@ -18,18 +18,38 @@ class UtilizationManagementExtractor:
 
         self.retrieval_keywords = [
 
+            # Explicit QL labels (must match LLM prompt)
             "quantity limit",
+            "quantity limits",
             "quantity level limit",
+            "quantity restriction",
+            "ql",
+
+            # Dispensing / supply limits
+            "dispensing limit",
+            "days supply",
+            "day supply",
+            "max units",
+            "maximum units",
+            "maximum quantity",
+            "units per",
+
+            # Dose-based QL language
             "dose limit",
             "maximum dose",
-            "maximum quantity",
             "frequency limit",
-            "site of care",
+            "per 28 days",
+            "per 56 days",
+            "per 84 days",
+
+            # Fill-related
             "split fill",
-            "units per",
+            "partial fill",
+
+            # Site / form
+            "site of care",
             "vials",
-            "syringe",
-            "injection"
+            "syringe"
         ]
 
         # -------------------------------------------------
@@ -57,7 +77,47 @@ class UtilizationManagementExtractor:
         brand
     ):
 
-        collected_pages = []
+        # ---------------------------------------------
+        # PASS 1 — strict: brand AND utilization keyword
+        # on the same page. Avoids pulling in unrelated
+        # drug QL sections.
+        # ---------------------------------------------
+
+        collected_pages = self._collect_strict(
+            pages,
+            brand
+        )
+
+        # ---------------------------------------------
+        # PASS 2 — proximity fallback: if strict pass
+        # found nothing, take utilization-keyword pages
+        # within ±2 pages of a brand-match page.
+        # Handles QL tables where drug name is in a row
+        # but section header is on the previous page.
+        # ---------------------------------------------
+
+        if not collected_pages:
+
+            collected_pages = self._collect_proximity(
+                pages,
+                brand
+            )
+
+        return "\n".join(
+            collected_pages
+        )
+
+    # =====================================================
+    # PASS 1 — STRICT COLLECTION
+    # =====================================================
+
+    def _collect_strict(
+        self,
+        pages,
+        brand
+    ):
+
+        collected = []
 
         for page in pages:
 
@@ -65,51 +125,22 @@ class UtilizationManagementExtractor:
 
             lower_text = text.lower()
 
-            # ---------------------------------------------
-            # EXCLUSION FILTER
-            # ---------------------------------------------
-
             if any(
                 exclusion in lower_text
-                for exclusion in (
-                    self.exclusion_keywords
-                )
+                for exclusion in self.exclusion_keywords
             ):
-
                 continue
 
-            # ---------------------------------------------
-            # BRAND MATCH
-            # ---------------------------------------------
-
-            brand_match = (
-                brand.lower()
-                in lower_text
-            )
-
-            # ---------------------------------------------
-            # UTILIZATION MATCH
-            # ---------------------------------------------
+            brand_match = brand.lower() in lower_text
 
             utilization_match = any(
-
                 keyword in lower_text
-
-                for keyword in (
-                    self.retrieval_keywords
-                )
+                for keyword in self.retrieval_keywords
             )
 
-            # ---------------------------------------------
-            # KEEP PAGE
-            # ---------------------------------------------
+            if brand_match and utilization_match:
 
-            if (
-                brand_match
-                and utilization_match
-            ):
-
-                collected_pages.append(
+                collected.append(
 
                     f"\n\n===== PAGE "
                     f"{page['page_number']} =====\n\n"
@@ -117,9 +148,78 @@ class UtilizationManagementExtractor:
                     + text
                 )
 
-        return "\n".join(
-            collected_pages
-        )
+        return collected
+
+    # =====================================================
+    # PASS 2 — PROXIMITY FALLBACK
+    # =====================================================
+
+    def _collect_proximity(
+        self,
+        pages,
+        brand,
+        window=2
+    ):
+
+        # Build set of page indices where brand appears
+        brand_indices = set()
+
+        for idx, page in enumerate(pages):
+
+            if brand.lower() in page["text"].lower():
+
+                brand_indices.add(idx)
+
+        # Collect utilization-keyword pages within
+        # `window` pages of any brand-match page
+        collected = []
+
+        seen_page_numbers = set()
+
+        for idx, page in enumerate(pages):
+
+            text = page["text"]
+
+            lower_text = text.lower()
+
+            if any(
+                exclusion in lower_text
+                for exclusion in self.exclusion_keywords
+            ):
+                continue
+
+            utilization_match = any(
+                keyword in lower_text
+                for keyword in self.retrieval_keywords
+            )
+
+            if not utilization_match:
+                continue
+
+            near_brand = any(
+                abs(idx - b_idx) <= window
+                for b_idx in brand_indices
+            )
+
+            if (
+                near_brand
+                and page["page_number"] not in seen_page_numbers
+            ):
+
+                seen_page_numbers.add(
+                    page["page_number"]
+                )
+
+                collected.append(
+
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} "
+                    f"[proximity] =====\n\n"
+
+                    + text
+                )
+
+        return collected
 
     # =====================================================
     # LLM EXTRACTION
