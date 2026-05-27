@@ -2,6 +2,10 @@ import json
 from extractors.model_router import (
     ModelRouter
 )
+from utils.extractor_utils import (
+    clean_json_output,
+    write_debug_context
+)
 
 
 class ClinicalAccessExtractor:
@@ -391,32 +395,14 @@ class ClinicalAccessExtractor:
         return response
 
     # =====================================================
-    # CLEAN JSON
-    # =====================================================
-
-    def clean_json_output(
-        self,
-        text
-    ):
-
-        cleaned = (
-
-            text
-            .replace("```json", "")
-            .replace("```", "")
-            .strip()
-        )
-
-        return cleaned
-
-    # =====================================================
     # MAIN EXTRACT
     # =====================================================
 
     def extract(
         self,
         pages,
-        brand
+        brand,
+        pdf_name=""
     ):
 
         try:
@@ -436,19 +422,12 @@ class ClinicalAccessExtractor:
             # DEBUG FILE
             # ---------------------------------------------
 
-            debug_file = (
-
-                f"debug/"
-                f"debug_clinical_access_{brand}.txt"
+            write_debug_context(
+                "clinical_access",
+                brand,
+                context,
+                pdf_name
             )
-
-            with open(
-                debug_file,
-                "w",
-                encoding="utf-8"
-            ) as f:
-
-                f.write(context)
 
             # ---------------------------------------------
             # LLM EXTRACTION
@@ -462,7 +441,7 @@ class ClinicalAccessExtractor:
             )
 
             cleaned_output = (
-                self.clean_json_output(
+                clean_json_output(
                     llm_output
                 )
             )

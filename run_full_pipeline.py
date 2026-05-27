@@ -135,7 +135,8 @@ for idx, test in enumerate(TEST_CASES):
         age_result = (
             age_extractor.extract(
                 pages=pages,
-                brand=brand
+                brand=brand,
+                pdf_name=test["filename"]
             )
         )
         print(
@@ -150,7 +151,8 @@ for idx, test in enumerate(TEST_CASES):
         therapy_result = (
             therapy_extractor.extract(
                 pages=pages,
-                brand=brand
+                brand=brand,
+                pdf_name=test["filename"]
             )
         )
         print(
@@ -193,7 +195,9 @@ for idx, test in enumerate(TEST_CASES):
 
                 pages=pages,
 
-                brand=brand
+                brand=brand,
+
+                pdf_name=test["filename"]
             )
         )
         print(
@@ -210,7 +214,9 @@ for idx, test in enumerate(TEST_CASES):
 
                 pages=pages,
 
-                brand=brand
+                brand=brand,
+
+                pdf_name=test["filename"]
             )
         )
         print(
@@ -227,7 +233,9 @@ for idx, test in enumerate(TEST_CASES):
 
                 pages=pages,
 
-                brand=brand
+                brand=brand,
+
+                pdf_name=test["filename"]
             )
         )
         print(

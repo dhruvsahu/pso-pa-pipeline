@@ -1,7 +1,10 @@
 import json
-import re
 from extractors.model_router import (
     ModelRouter
+)
+from utils.extractor_utils import (
+    clean_json_output,
+    write_debug_context
 )
 
 class UtilizationManagementExtractor:
@@ -320,29 +323,11 @@ quantity_limits must be EXACTLY ONE OF:
 
         return response
 
-    # =====================================================
-    # CLEAN JSON OUTPUT
-    # =====================================================
-
-    def clean_json_output(
-        self,
-        text
-    ):
-
-        cleaned = (
-
-            text
-            .replace("```json", "")
-            .replace("```", "")
-            .strip()
-        )
-
-        return cleaned
-
     def extract(
         self,
         pages,
-        brand
+        brand,
+        pdf_name=""
     ):
 
         try:
@@ -362,19 +347,12 @@ quantity_limits must be EXACTLY ONE OF:
             # DEBUG FILE
             # ---------------------------------------------
 
-            debug_file = (
-
-                f"debug/"
-                f"debug_utilization_{brand}.txt"
+            write_debug_context(
+                "utilization",
+                brand,
+                context,
+                pdf_name
             )
-
-            with open(
-                debug_file,
-                "w",
-                encoding="utf-8"
-            ) as f:
-
-                f.write(context)
 
             # ---------------------------------------------
             # LLM EXTRACTION
@@ -388,7 +366,7 @@ quantity_limits must be EXACTLY ONE OF:
             )
 
             cleaned_output = (
-                self.clean_json_output(
+                clean_json_output(
                     llm_output
                 )
             )
