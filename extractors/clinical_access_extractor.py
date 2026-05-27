@@ -14,16 +14,36 @@ class ClinicalAccessExtractor:
 
         self.retrieval_keywords = [
 
-            "prescriber specialties",
-            "prescriber specialty",
-            "tb test",
+            # TB testing
             "tuberculosis",
             "latent tb",
+            "tb test",
+            "tb screening",
+            "tuberculin",
+            "ppd",
+            "igra",
+            "quantiferon",
+
+            # Precertification / prior auth
             "precertification",
+            "requires precertification",
+            "prior authorization",
+            "prior auth",
+            "preauthorization",
+            "advance approval",
+
+            # Specialist restrictions
+            "prescriber specialties",
+            "prescriber specialty",
             "specialist",
             "must be prescribed by",
-            "consultation with",
-            "requires precertification"
+            "prescribed by a",
+            "dermatologist",
+            "rheumatologist",
+            "gastroenterologist",
+            "initiated by",
+            "under the supervision",
+            "consultation with"
         ]
 
         self.model_router = (
@@ -55,7 +75,48 @@ class ClinicalAccessExtractor:
         brand
     ):
 
-        collected_pages = []
+        # ---------------------------------------------
+        # PASS 1 — strict: brand AND access keyword
+        # on the same page.  Avoids pulling in shared
+        # policy sections about unrelated drugs.
+        # ---------------------------------------------
+
+        collected_pages = self._collect_strict(
+            pages,
+            brand
+        )
+
+        # ---------------------------------------------
+        # PASS 2 — proximity fallback: if strict pass
+        # found nothing, take access-keyword pages that
+        # sit within ±2 pages of a brand-match page.
+        # Handles policies where TB / precert language
+        # lives in a shared section that doesn't repeat
+        # the brand name.
+        # ---------------------------------------------
+
+        if not collected_pages:
+
+            collected_pages = self._collect_proximity(
+                pages,
+                brand
+            )
+
+        return "\n".join(
+            collected_pages
+        )
+
+    # =====================================================
+    # PASS 1 — STRICT COLLECTION
+    # =====================================================
+
+    def _collect_strict(
+        self,
+        pages,
+        brand
+    ):
+
+        collected = []
 
         for page in pages:
 
@@ -63,54 +124,22 @@ class ClinicalAccessExtractor:
 
             lower_text = text.lower()
 
-            # ---------------------------------------------
-            # EXCLUSION FILTER
-            # ---------------------------------------------
-
             if any(
                 exclusion in lower_text
-                for exclusion in (
-                    self.exclusion_keywords
-                )
+                for exclusion in self.exclusion_keywords
             ):
-
                 continue
 
-            # ---------------------------------------------
-            # BRAND MATCH
-            # ---------------------------------------------
-
-            brand_match = (
-                brand.lower()
-                in lower_text
-            )
-
-            # ---------------------------------------------
-            # ACCESS MATCH
-            # ---------------------------------------------
+            brand_match = brand.lower() in lower_text
 
             access_match = any(
-
                 keyword in lower_text
-
-                for keyword in (
-                    self.retrieval_keywords
-                )
+                for keyword in self.retrieval_keywords
             )
 
-            # ---------------------------------------------
-            # KEEP PAGE
-            # Both conditions required to avoid pulling in
-            # context about unrelated drugs that happen to
-            # mention TB test or specialist keywords.
-            # ---------------------------------------------
+            if brand_match and access_match:
 
-            if (
-                brand_match
-                and access_match
-            ):
-
-                collected_pages.append(
+                collected.append(
 
                     f"\n\n===== PAGE "
                     f"{page['page_number']} =====\n\n"
@@ -118,9 +147,79 @@ class ClinicalAccessExtractor:
                     + text
                 )
 
-        return "\n".join(
-            collected_pages
-        )
+        return collected
+
+    # =====================================================
+    # PASS 2 — PROXIMITY FALLBACK
+    # =====================================================
+
+    def _collect_proximity(
+        self,
+        pages,
+        brand,
+        window=2
+    ):
+
+        # Build a set of page indices where brand appears
+        brand_indices = set()
+
+        for idx, page in enumerate(pages):
+
+            if brand.lower() in page["text"].lower():
+
+                brand_indices.add(idx)
+
+        # Collect pages with access keywords that are
+        # within `window` pages of any brand-match page
+        collected = []
+
+        seen_page_numbers = set()
+
+        for idx, page in enumerate(pages):
+
+            text = page["text"]
+
+            lower_text = text.lower()
+
+            if any(
+                exclusion in lower_text
+                for exclusion in self.exclusion_keywords
+            ):
+                continue
+
+            access_match = any(
+                keyword in lower_text
+                for keyword in self.retrieval_keywords
+            )
+
+            if not access_match:
+                continue
+
+            # Check proximity to any brand page
+            near_brand = any(
+                abs(idx - b_idx) <= window
+                for b_idx in brand_indices
+            )
+
+            if (
+                near_brand
+                and page["page_number"] not in seen_page_numbers
+            ):
+
+                seen_page_numbers.add(
+                    page["page_number"]
+                )
+
+                collected.append(
+
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} "
+                    f"[proximity] =====\n\n"
+
+                    + text
+                )
+
+        return collected
 
     # =====================================================
     # LLM EXTRACTION
