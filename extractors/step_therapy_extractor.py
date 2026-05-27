@@ -180,6 +180,22 @@ class StepTherapyExtractor:
         }
 
     # =====================================================
+    # STEP COUNTING (deterministic)
+    # =====================================================
+
+    def count_steps(self, step_slots):
+        """
+        Each slot in step_slots represents ONE required step.
+        OR alternatives live inside the slot — they don't add steps.
+        Returns integer count, or "NA" if no slots exist.
+        """
+
+        if not step_slots:
+            return "NA"
+
+        return len(step_slots)
+
+    # =====================================================
     # LLM NARRATIVE EXTRACTION
     # =====================================================
 
@@ -379,35 +395,36 @@ Required JSON format:
                 ) from json_err
 
             # -----------------------------------------
-            # BUILD RAW THERAPY LIST
+            # COMPUTE STEPS FROM SLOTS (Python counts)
             # -----------------------------------------
 
-            raw_therapy_mentions = []
-
-            raw_therapy_mentions.extend(
-                requirements_output.get(
-                    "brand_therapies",
-                    []
-                )
+            brand_step_slots = requirements_output.get(
+                "brand_step_slots", []
             )
 
-            raw_therapy_mentions.extend(
-                requirements_output.get(
-                    "generic_therapies",
-                    []
-                )
+            generic_step_slots = requirements_output.get(
+                "generic_step_slots", []
             )
 
-            if requirements_output.get(
-                "phototherapy_required",
-                False
-            ):
+            brand_steps = self.count_steps(
+                brand_step_slots
+            )
 
-                raw_therapy_mentions.append(
-                    "phototherapy"
-                )
+            generic_steps = self.count_steps(
+                generic_step_slots
+            )
 
-            therapy_sentences = []
+            brand_therapies = [
+                therapy
+                for slot in brand_step_slots
+                for therapy in slot.get("alternatives", [])
+            ]
+
+            generic_therapies = [
+                therapy
+                for slot in generic_step_slots
+                for therapy in slot.get("alternatives", [])
+            ]
 
             # -----------------------------------------
             # DEBUG CONTEXT
@@ -469,32 +486,20 @@ Required JSON format:
                     brand
                 ),
 
-                "logic_type": requirements_output.get(
-                    "logic_type",
-                    []
-                ),
+                "logic_type": [],
 
-                "brand_steps": requirements_output.get(
-                    "brand_steps"
-                ),
+                "brand_steps": brand_steps,
 
-                "generic_steps": requirements_output.get(
-                    "generic_steps"
-                ),
+                "generic_steps": generic_steps,
 
                 "phototherapy_required": requirements_output.get(
-                    "phototherapy_required"
+                    "phototherapy_required",
+                    "NA"
                 ),
 
-                "brand_therapies": requirements_output.get(
-                    "brand_therapies",
-                    []
-                ),
+                "brand_therapies": brand_therapies,
 
-                "generic_therapies": requirements_output.get(
-                    "generic_therapies",
-                    []
-                ),
+                "generic_therapies": generic_therapies,
 
                 "step_therapy_requirements": parsed_output.get(
                     "step_therapy_requirements",
@@ -590,17 +595,21 @@ Required JSON format:
 
         PHOTOTHERAPY step if:
         - It mentions phototherapy, PUVA, or UVB
-        - Count separately — DO NOT include in brand_steps or generic_steps
+        - Count separately — DO NOT include in brand_step_slots or generic_step_slots
 
-        STEP 3 — RESOLVE OR STATEMENTS:
-        If steps appear in an OR group, take the LEAST RESTRICTIVE PATH
-        (the path with the fewest total steps).
-        Count only the steps along that least restrictive path.
+        STEP 3 — GROUP OR ALTERNATIVES INTO SLOTS:
+        Each required step = ONE slot.
+        If multiple therapies appear as OR alternatives for the SAME step,
+        list all alternatives inside ONE slot's "alternatives" list.
+        AND requirements between distinct steps each get their own separate slot.
 
-        STEP 4 — OUTPUT COUNTS:
-        brand_steps   = count of branded/biologic steps on the least restrictive path
-        generic_steps = count of generic/non-biologic steps on the least restrictive path
-        Both must be an INTEGER or exactly "NA" if none required.
+        Example:
+        "Must try Humira OR Enbrel, then must try Cosentyx"
+        → brand_step_slots: [
+              {{"alternatives": ["Humira", "Enbrel"]}},
+              {{"alternatives": ["Cosentyx"]}}
+          ]
+        → brand has 2 slots (2 steps), regardless of OR alternatives inside each slot.
 
         IGNORE:
         - HCPCS / NDC / billing / dosing-only sections
@@ -610,23 +619,26 @@ Required JSON format:
         Return STRICT JSON ONLY:
 
         {{
-            "logic_type": [],
-            "brand_therapies": [],
-            "generic_therapies": [],
-            "brand_steps": "NA",
-            "generic_steps": "NA",
+            "brand_step_slots": [
+                {{"alternatives": ["<drug name>"]}}
+            ],
+            "generic_step_slots": [
+                {{"alternatives": ["<drug name>"]}}
+            ],
             "phototherapy_required": "Yes/No/NA",
-            "phototherapy_steps": "NA",
             "reasoning": "",
             "confidence": 0.0
         }}
 
         RULES:
-        - brand_steps and generic_steps must be an INTEGER (e.g. 0, 1, 2) or the string "NA"
+        - Each element in brand_step_slots / generic_step_slots is ONE required step
+        - OR alternatives for the same step go inside the same slot's "alternatives" list
+        - AND requirements between steps each get their own separate slot
+        - Return empty list [] for brand_step_slots or generic_step_slots if none required
         - phototherapy_required must be EXACTLY "Yes", "No", or "NA"
         - Do NOT hallucinate therapies — use ONLY evidence from the provided context
-        - Preserve exact policy wording in brand_therapies and generic_therapies lists
-        """
+        - Preserve exact policy wording inside alternatives lists
+"""
         model = self.model_router.select_model(
             context
         )
