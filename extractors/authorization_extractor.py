@@ -284,6 +284,23 @@ Duration fields may contain:
             )
 
             # ---------------------------------------------
+            # EMPTY CONTEXT GUARD
+            # ---------------------------------------------
+
+            if not context.strip():
+
+                return {
+                    "parameter_group": "Authorization",
+                    "brand": brand,
+                    "initial_authorization_months": "NA",
+                    "reauthorization_required": "NA",
+                    "reauthorization_duration_months": "NA",
+                    "reauthorization_requirements": [],
+                    "reasoning": "No authorization context found in policy",
+                    "confidence": 0.0
+                }
+
+            # ---------------------------------------------
             # LLM EXTRACTION
             # ---------------------------------------------
 

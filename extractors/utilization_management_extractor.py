@@ -355,6 +355,21 @@ quantity_limits must be EXACTLY ONE OF:
             )
 
             # ---------------------------------------------
+            # EMPTY CONTEXT GUARD
+            # ---------------------------------------------
+
+            if not context.strip():
+
+                return {
+                    "parameter_group": "Utilization Management",
+                    "brand": brand,
+                    "quantity_limits": "NA",
+                    "source_statements": [],
+                    "reasoning": "No utilization management context found in policy",
+                    "confidence": 0.0
+                }
+
+            # ---------------------------------------------
             # LLM EXTRACTION
             # ---------------------------------------------
 
