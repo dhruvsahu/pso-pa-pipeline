@@ -1,3 +1,4 @@
+from collections import deque
 from ollama import chat
 
 import google.generativeai as genai
@@ -12,6 +13,13 @@ import time
 
 
 class ModelRouter:
+
+    # Groq TPM ceiling for llama-3.3-70b-versatile
+    GROQ_TPM_LIMIT = 12000
+
+    # Safety margin — target 90% of limit so we never
+    # sit right on the edge
+    GROQ_TPM_TARGET = int(GROQ_TPM_LIMIT * 0.90)
 
     def __init__(self):
 
@@ -38,7 +46,9 @@ class ModelRouter:
 
         # =============================================
         # GROQ SETUP
-        # Model: llama-3.1-8b-instant
+        # Model: llama-3.3-70b-versatile (12K TPM)
+        # Token-aware throttle: rolling deque of
+        # (timestamp, tokens) over the last 60s.
         # =============================================
 
         if self.provider == "groq":
@@ -47,7 +57,10 @@ class ModelRouter:
                 api_key=groq_key
             )
 
-            self.groq_model = "llama-3.1-8b-instant"
+            self.groq_model = "llama-3.3-70b-versatile"
+
+            # Each entry: (unix_timestamp, token_count)
+            self._groq_token_window = deque()
 
         # =============================================
         # GEMINI SETUP
@@ -65,6 +78,68 @@ class ModelRouter:
                     "gemini-3.1-flash-lite"
                 )
             )
+
+    # =================================================
+    # GROQ TOKEN-AWARE THROTTLE
+    # Tracks tokens used in the last 60s and sleeps
+    # only as long as needed to stay under GROQ_TPM_TARGET.
+    # Gemini and Ollama paths never touch this.
+    # =================================================
+
+    def _groq_throttle(self, tokens_about_to_use):
+        """
+        Call BEFORE each Groq API request.
+        Evicts entries older than 60s, then checks if
+        adding `tokens_about_to_use` would exceed the
+        TPM target.  Sleeps the minimum required time
+        if it would, then records the call.
+        """
+
+        window = self._groq_token_window
+
+        while True:
+
+            now = time.time()
+
+            # Drop entries outside the 60s window
+            while (
+                window
+                and now - window[0][0] >= 60
+            ):
+                window.popleft()
+
+            tokens_in_window = sum(
+                t for _, t in window
+            )
+
+            headroom = (
+                self.GROQ_TPM_TARGET
+                - tokens_in_window
+            )
+
+            if tokens_about_to_use <= headroom:
+                # Safe to proceed
+                window.append(
+                    (now, tokens_about_to_use)
+                )
+                return
+
+            # Not enough headroom — calculate minimum
+            # sleep to free up space as old entries age out
+            oldest_ts = window[0][0]
+            sleep_needed = (
+                oldest_ts + 60 - now + 0.5
+            )
+
+            print(
+                f"[GROQ THROTTLE] "
+                f"{tokens_in_window} tokens used "
+                f"in last 60s "
+                f"(target {self.GROQ_TPM_TARGET}) — "
+                f"waiting {sleep_needed:.1f}s"
+            )
+
+            time.sleep(max(sleep_needed, 1))
 
     # =================================================
     # MODEL SELECTION
@@ -94,10 +169,19 @@ class ModelRouter:
     ):
 
         # =============================================
-        # GROQ  (llama-3.1-8b-instant)
+        # GROQ  (llama-3.3-70b-versatile, 12K TPM)
+        # Token-aware throttle runs before each call.
+        # Actual token usage is recorded after the
+        # response arrives so the window stays accurate.
         # =============================================
 
         if self.provider == "groq":
+
+            # Estimate prompt tokens before the call
+            # (~4 chars per token is a safe approximation)
+            estimated_tokens = len(prompt) // 4 + 300
+
+            self._groq_throttle(estimated_tokens)
 
             print(
                 f"[LLM] Using Groq: {self.groq_model}"
@@ -123,6 +207,24 @@ class ModelRouter:
                         )
                     )
 
+                    # Replace the estimate with actual
+                    # usage so the window stays accurate
+                    actual_tokens = (
+                        response.usage.total_tokens
+                    )
+                    now = time.time()
+                    # Pop the estimate entry we added
+                    # and replace with actual
+                    window = self._groq_token_window
+                    if window and window[-1][1] == estimated_tokens:
+                        window.pop()
+                    window.append((now, actual_tokens))
+
+                    print(
+                        f"[GROQ TOKENS] {actual_tokens} "
+                        f"tokens used this call"
+                    )
+
                     return (
                         response.choices[0]
                         .message.content
@@ -135,6 +237,7 @@ class ModelRouter:
                     if (
                         "rate_limit" in err
                         or "429" in err
+                        or "tokens per minute" in err
                     ):
 
                         if attempt == max_retries - 1:
