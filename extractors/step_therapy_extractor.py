@@ -78,6 +78,144 @@ class StepTherapyExtractor:
                 )
             }
     # =====================================================
+    # STEP THERAPY RETRIEVAL KEYWORDS
+    # =====================================================
+
+    STEP_KEYWORDS = [
+        "step therapy",
+        "prior therapy",
+        "tried and failed",
+        "failure of",
+        "inadequate response",
+        "trial of",
+        "must have tried",
+        "previously received",
+        "previously treated",
+        "ineffective or not tolerated",
+        "intolerance",
+        "failed therapy",
+        "criteria for initial",
+        "approval criteria",
+        "initial approval",
+        "coverage criteria",
+        "medical necessity",
+        "phototherapy",
+        "conventional systemic",
+        "biologic",
+    ]
+
+    STEP_EXCLUSIONS = [
+        "references",
+        "appendix",
+        "policy history",
+        "review history",
+        "coding",
+        "billing",
+        "hcpcs",
+        "ndc",
+        "table of contents",
+    ]
+
+    # =====================================================
+    # TWO-PASS KEYWORD RETRIEVAL
+    # =====================================================
+
+    def _collect_strict(self, pages, brand):
+
+        collected = []
+
+        for page in pages:
+
+            text = page["text"]
+            lower = text.lower()
+
+            if any(
+                ex in lower
+                for ex in self.STEP_EXCLUSIONS
+            ):
+                continue
+
+            if (
+                brand.lower() in lower
+                and any(
+                    kw in lower
+                    for kw in self.STEP_KEYWORDS
+                )
+            ):
+                collected.append(
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} =====\n\n"
+                    + text
+                )
+
+        return collected
+
+    def _collect_proximity(
+        self, pages, brand, window=2
+    ):
+
+        brand_indices = {
+            idx for idx, p in enumerate(pages)
+            if brand.lower() in p["text"].lower()
+        }
+
+        collected = []
+        seen = set()
+
+        for idx, page in enumerate(pages):
+
+            text = page["text"]
+            lower = text.lower()
+
+            if any(
+                ex in lower
+                for ex in self.STEP_EXCLUSIONS
+            ):
+                continue
+
+            if not any(
+                kw in lower
+                for kw in self.STEP_KEYWORDS
+            ):
+                continue
+
+            if any(
+                abs(idx - b) <= window
+                for b in brand_indices
+            ) and page["page_number"] not in seen:
+
+                seen.add(page["page_number"])
+                collected.append(
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} "
+                    f"[proximity] =====\n\n"
+                    + text
+                )
+
+        return collected
+
+    def retrieve_context(self, pages, brand):
+        """
+        Primary: two-pass brand+keyword retrieval.
+        Fallback: extract_approval_section (section-header
+        approach) for single-drug dedicated policy docs.
+        """
+
+        collected = self._collect_strict(pages, brand)
+
+        if not collected:
+            collected = self._collect_proximity(
+                pages, brand
+            )
+
+        if collected:
+            return "\n".join(collected)
+
+        # Fallback to section-header approach
+        approval = self.extract_approval_section(pages)
+        return approval.get("approval_text") or ""
+
+    # =====================================================
     # PDF PAGE EXTRACTION
     # =====================================================
     # EXTRACT APPROVAL SECTION
@@ -104,6 +242,7 @@ class StepTherapyExtractor:
 
             "criteria for initial approval",
             "initial approval",
+            "approval criteria",
             "coverage criteria",
             "medical necessity"
         ]
@@ -276,25 +415,30 @@ Required JSON format:
             # )
 
             # -----------------------------------------
-            # APPROVAL SECTION EXTRACTION
+            # CONTEXT RETRIEVAL
+            # Two-pass keyword+brand first; section-
+            # header approach as fallback.
             # -----------------------------------------
 
-            approval_section = (
-                self.extract_approval_section(
-                    pages
-                )
+            context = self.retrieve_context(
+                pages, brand
             )
 
-            context = approval_section[
-                "approval_text"
-            ]
+            # -----------------------------------------
+            # DEBUG CONTEXT
+            # Always write before any LLM calls or
+            # early returns so every run is traceable.
+            # -----------------------------------------
 
-            retrieved_pages = approval_section[
-                "approval_pages"
-            ]
+            write_debug_context(
+                "step_therapy",
+                brand,
+                context or "",
+                pdf_name
+            )
 
             # -----------------------------------------
-            # NO APPROVAL SECTION FOUND
+            # NO CONTEXT FOUND
             # -----------------------------------------
 
             if (
@@ -323,14 +467,12 @@ Required JSON format:
                     "generic_therapies": [],
 
                     "reasoning": (
-                        "No approval section found"
+                        "No step therapy context found"
                     ),
 
                     "confidence": 0,
 
-                    "retrieved_pages": (
-                        retrieved_pages
-                    )
+                    "retrieved_pages": []
                 }
 
             # -----------------------------------------
@@ -391,17 +533,6 @@ Required JSON format:
                 for slot in generic_step_slots
                 for therapy in slot.get("alternatives", [])
             ]
-
-            # -----------------------------------------
-            # DEBUG CONTEXT
-            # -----------------------------------------
-
-            write_debug_context(
-                "step_therapy",
-                brand,
-                context,
-                pdf_name
-            )
 
             # -----------------------------------------
             # LLM EXTRACTION
@@ -473,9 +604,7 @@ Required JSON format:
                     "confidence"
                 ),
 
-                "retrieved_pages": (
-                    retrieved_pages
-                )
+                "retrieved_pages": []
             }
 
         except Exception as e:

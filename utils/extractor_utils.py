@@ -37,6 +37,66 @@ def clean_json_output(text):
     return text.strip()
 
 
+def collect_wide_fallback(
+    pages,
+    brand,
+    keywords,
+    exclusions,
+    window=10
+):
+    """
+    Last-resort fallback for large multi-drug formulary
+    documents where the target brand appears in a list/
+    table far from the criteria section.
+
+    Collects pages containing any of `keywords` that are
+    within `window` pages of ANY brand-mention page.
+    Uses a wider window (default ±10) than the standard
+    proximity pass (±2).
+
+    Called only when both strict and ±2-proximity passes
+    return empty.
+    """
+
+    brand_indices = {
+        idx for idx, p in enumerate(pages)
+        if brand.lower() in p["text"].lower()
+    }
+
+    if not brand_indices:
+        return []
+
+    collected = []
+    seen = set()
+
+    for idx, page in enumerate(pages):
+
+        text = page["text"]
+        lower = text.lower()
+
+        if any(ex in lower for ex in exclusions):
+            continue
+
+        if not any(kw in lower for kw in keywords):
+            continue
+
+        near = any(
+            abs(idx - b) <= window
+            for b in brand_indices
+        )
+
+        if near and page["page_number"] not in seen:
+            seen.add(page["page_number"])
+            collected.append(
+                f"\n\n===== PAGE "
+                f"{page['page_number']} "
+                f"[wide-fallback] =====\n\n"
+                + text
+            )
+
+    return collected
+
+
 def write_debug_context(
     extractor_name,
     brand,
