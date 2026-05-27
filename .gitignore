@@ -4,3 +4,6 @@ __pycache__/
 ~$*
 outputs/
 outputs/*.json
+PA_Business_Rules*.xlsx
+assets/sample_batch*.csv
+debug/*.txt
