@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PsO PA Policy Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fadeInUp 0.35s ease forwards; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.9s linear infinite; display: inline-block; }
+
+        .gauge-arc { transition: stroke-dasharray 1.4s cubic-bezier(.4,0,.2,1); }
+
+        /* Drop-zone hover glow */
+        .drop-active {
+            border-color: #6366f1 !important;
+            background: rgba(99,102,241,0.06);
+            box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+
+<!-- ======================================================
+     UPLOAD VIEW
+====================================================== -->
+<div id="upload-view" class="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+
+    <!-- Badge + heading -->
+    <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/25 rounded-full px-4 py-1.5 text-indigo-400 text-xs font-medium tracking-wide mb-5">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+            PsO PA Intelligence Platform
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
+            PA Policy Analyzer
+        </h1>
+        <p class="text-slate-400 text-lg max-w-lg mx-auto leading-relaxed">
+            Upload a prior authorization document and receive an
+            FDA-benchmarked access quality score in real time.
+        </p>
+    </div>
+
+    <!-- Card -->
+    <div class="w-full max-w-md">
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-7 shadow-2xl">
+
+            <!-- Drop zone -->
+            <div id="drop-zone"
+                 class="border-2 border-dashed border-slate-700 rounded-xl px-6 py-10 text-center cursor-pointer transition-all duration-200 mb-5"
+                 onclick="document.getElementById('pdf-input').click()">
+                <div id="dz-icon" class="text-3xl mb-2">📄</div>
+                <p id="dz-text" class="text-slate-300 font-medium text-sm">
+                    Drop PDF here or <span class="text-indigo-400">browse files</span>
+                </p>
+                <p class="text-slate-600 text-xs mt-1">Prior authorization policy document</p>
+                <input type="file" id="pdf-input" accept=".pdf" class="hidden">
+            </div>
+
+            <!-- Brand select -->
+            <div class="mb-5">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Drug Brand
+                </label>
+                <select id="brand-select"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                    <option value="">Select a brand…</option>
+                    {% for brand in brands %}
+                    <option value="{{ brand }}">{{ brand }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Error msg -->
+            <p id="upload-error" class="text-red-400 text-xs mb-3 hidden"></p>
+
+            <!-- Submit -->
+            <button id="analyze-btn"
+                    onclick="startAnalysis()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl px-6 py-3.5 text-sm transition-all duration-200 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Analyze Policy
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ======================================================
+     ANALYSIS VIEW
+====================================================== -->
+<div id="analysis-view" class="hidden min-h-screen px-4 py-8">
+
+    <!-- Top bar -->
+    <div class="max-w-5xl mx-auto flex items-center justify-between mb-7">
+        <div>
+            <h2 class="text-lg font-bold text-white">Policy Analysis</h2>
+            <p id="analysis-subtitle" class="text-slate-500 text-xs mt-0.5"></p>
+        </div>
+        <button onclick="resetToUpload()"
+                class="text-slate-500 hover:text-slate-200 text-sm transition-colors flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            New Analysis
+        </button>
+    </div>
+
+    <!-- Layout -->
+    <div class="max-w-5xl mx-auto flex gap-5">
+
+        <!-- Sidebar pipeline -->
+        <div class="w-52 flex-shrink-0">
+            <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-4 sticky top-6">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-1">
+                    Pipeline
+                </p>
+                <div id="pipeline-steps" class="space-y-0.5"></div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-1 min-w-0">
+            <div id="findings-area" class="space-y-3"></div>
+            <div id="score-panel"></div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ======================================================
+     JAVASCRIPT
+====================================================== -->
+<script>
+
+// --------------------------------------------------------
+// CONFIG
+// --------------------------------------------------------
+const STEPS = [
+    { id: 'age',             label: 'Age Restriction',   icon: '👤' },
+    { id: 'step_therapy',    label: 'Step Therapy',      icon: '🔗' },
+    { id: 'authorization',   label: 'Authorization',     icon: '📋' },
+    { id: 'utilization',     label: 'Utilization Mgmt',  icon: '💊' },
+    { id: 'clinical_access', label: 'Clinical Access',   icon: '🏥' },
+    { id: 'score',           label: 'Scoring',           icon: '📊' },
+];
+
+const ARC_LEN   = 283;   // π × r (r=90, semicircle arc)
+let   selectedFile = null;
+
+// --------------------------------------------------------
+// FILE HANDLING — drop zone
+// --------------------------------------------------------
+const dz = document.getElementById('drop-zone');
+const fileInput = document.getElementById('pdf-input');
+
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drop-active'); });
+dz.addEventListener('dragleave', ()  => dz.classList.remove('drop-active'));
+dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drop-active');
+    const f = e.dataTransfer.files[0];
+    if (f?.type === 'application/pdf') setFile(f);
+});
+fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+});
+
+function setFile(f) {
+    selectedFile = f;
+    document.getElementById('dz-icon').textContent = '✅';
+    document.getElementById('dz-text').textContent  = f.name;
+}
+
+// --------------------------------------------------------
+// START ANALYSIS
+// --------------------------------------------------------
+async function startAnalysis() {
+    const brand = document.getElementById('brand-select').value;
+    const err   = document.getElementById('upload-error');
+    err.classList.add('hidden');
+
+    if (!selectedFile) { showErr('Please select a PDF file first.'); return; }
+    if (!brand)        { showErr('Please select a drug brand.');      return; }
+
+    // Disable button, show loading
+    const btn = document.getElementById('analyze-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="w-4 h-4 spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg> Uploading…`;
+
+    // Upload PDF
+    const fd = new FormData();
+    fd.append('pdf', selectedFile);
+    let session_id;
+    try {
+        const res  = await fetch('/upload', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.error) { showErr(json.error); resetBtn(); return; }
+        session_id = json.session_id;
+    } catch (e) {
+        showErr('Upload failed. Is the server running?');
+        resetBtn();
+        return;
+    }
+
+    // Switch to analysis view
+    document.getElementById('upload-view').classList.add('hidden');
+    document.getElementById('analysis-view').classList.remove('hidden');
+    document.getElementById('analysis-subtitle').textContent =
+        `${selectedFile.name}  ·  ${brand}`;
+
+    buildPipelineSidebar();
+
+    // Open SSE stream
+    const evtSource = new EventSource(`/stream?session_id=${session_id}&brand=${encodeURIComponent(brand)}`);
+    evtSource.onmessage = e => {
+        const data = JSON.parse(e.data);
+        if (data.step === 'done')  { evtSource.close(); return; }
+        if (data.step === 'error') { evtSource.close(); showAnalysisError(data.message); return; }
+        handleStep(data.step, data.result);
+    };
+    evtSource.onerror = () => evtSource.close();
+}
+
+function showErr(msg) {
+    const el = document.getElementById('upload-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+}
+
+function resetBtn() {
+    const btn = document.getElementById('analyze-btn');
+    btn.disabled = false;
+    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg> Analyze Policy`;
+}
+
+// --------------------------------------------------------
+// PIPELINE SIDEBAR
+// --------------------------------------------------------
+function buildPipelineSidebar() {
+    document.getElementById('pipeline-steps').innerHTML =
+        STEPS.map(s => `
+        <div id="ps-${s.id}"
+             class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-500 transition-all duration-300">
+            <div id="pi-${s.id}"
+                 class="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center flex-shrink-0">
+                <span class="block w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+            </div>
+            <span class="text-xs">${s.label}</span>
+        </div>`).join('');
+
+    setRunning(STEPS[0].id);
+}
+
+function setRunning(id) {
+    const row  = document.getElementById(`ps-${id}`);
+    const icon = document.getElementById(`pi-${id}`);
+    if (!row) return;
+    row.classList.replace('text-slate-500','text-indigo-400');
+    row.classList.add('bg-indigo-500/10');
+    icon.className = 'w-5 h-5 rounded-full border border-indigo-500 flex items-center justify-center flex-shrink-0';
+    icon.innerHTML = `<svg class="w-2.5 h-2.5 spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    </svg>`;
+}
+
+function setDone(id) {
+    const row  = document.getElementById(`ps-${id}`);
+    const icon = document.getElementById(`pi-${id}`);
+    if (!row) return;
+    row.className = 'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-emerald-400 transition-all duration-300';
+    icon.className = 'w-5 h-5 rounded-full border border-emerald-500 bg-emerald-500/10 flex items-center justify-center flex-shrink-0';
+    icon.innerHTML = `<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>`;
+}
+
+// --------------------------------------------------------
+// HANDLE STEP RESULT
+// --------------------------------------------------------
+function handleStep(step, result) {
+    setDone(step);
+    const idx = STEPS.findIndex(s => s.id === step);
+    if (idx < STEPS.length - 1) setRunning(STEPS[idx + 1].id);
+
+    if (step === 'score') {
+        renderScore(result);
+    } else {
+        renderCard(step, result);
+    }
+}
+
+// --------------------------------------------------------
+// FINDING CARD
+// --------------------------------------------------------
+function renderCard(step, result) {
+    const meta  = STEPS.find(s => s.id === step);
+    const card  = document.createElement('div');
+    card.className = 'bg-slate-900 border border-slate-700/60 rounded-2xl p-5 fade-in-up';
+    card.innerHTML  = cardContent(step, result, meta);
+    document.getElementById('findings-area').appendChild(card);
+}
+
+function cardContent(step, result, meta) {
+    const conf = result.confidence != null
+        ? `${(result.confidence * 100).toFixed(0)}%` : '—';
+
+    const header = `
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-base">${meta.icon}</span>
+            <h3 class="font-semibold text-white text-sm">${meta.label}</h3>
+            <span class="ml-auto text-xs text-slate-600">confidence ${conf}</span>
+        </div>`;
+
+    let body = '';
+
+    // ---- AGE ----
+    if (step === 'age') {
+        const v   = result.value || 'NA';
+        const bad = v !== 'NA' && v !== 'ALL' && v !== 'No Age Restriction';
+        body = `
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 mb-0.5">Minimum age in policy</p>
+                    <p class="text-xl font-bold text-white">${v}</p>
+                </div>
+                ${badge(bad ? 'warn' : 'ok', bad ? '⚠ Restriction found' : '✓ No restriction')}
+            </div>`;
+    }
+
+    // ---- STEP THERAPY ----
+    else if (step === 'step_therapy') {
+        const bs = result.brand_steps   ?? 0;
+        const gs = result.generic_steps ?? 0;
+        const ph = result.phototherapy_required;
+        const bt = result.brand_therapies   || [];
+        const gt = result.generic_therapies || [];
+        body = `
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                ${stat('Brand Steps',   bs,            bs > 0          ? 'red'  : 'green')}
+                ${stat('Generic Steps', gs,            gs > 0          ? 'amber': 'green')}
+                ${stat('Phototherapy',  ph === 'Yes' ? 'Required':'No', ph === 'Yes' ? 'amber': 'green')}
+            </div>
+            ${bt.length ? `<p class="text-xs text-slate-500 mt-1">Brand prior therapies: <span class="text-slate-300">${bt.join(' → ')}</span></p>` : ''}
+            ${gt.length ? `<p class="text-xs text-slate-500 mt-1">Generic prior therapies: <span class="text-slate-300">${gt.join(' → ')}</span></p>` : ''}`;
+    }
+
+    // ---- AUTHORIZATION ----
+    else if (step === 'authorization') {
+        const r = result.reauthorization_required || 'NA';
+        body = `
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 mb-0.5">Reauthorization required</p>
+                    <p class="text-xl font-bold text-white">${r}</p>
+                </div>
+                ${badge(r === 'Yes' ? 'warn' : 'ok', r === 'Yes' ? '⚠ Required' : '✓ Not required')}
+            </div>`;
+    }
+
+    // ---- UTILIZATION ----
+    else if (step === 'utilization') {
+        const ql    = result.quantity_limits;
+        const hasQL = Array.isArray(ql) && ql.length > 0;
+        body = `
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-slate-500 mb-0.5">Quantity limits</p>
+                    <p class="text-sm font-medium text-white break-words">${hasQL ? ql.join(' · ') : (ql || 'NA')}</p>
+                </div>
+                ${badge(hasQL ? 'warn' : 'ok', hasQL ? '⚠ Limits found' : '✓ No limits')}
+            </div>`;
+    }
+
+    // ---- CLINICAL ACCESS ----
+    else if (step === 'clinical_access') {
+        const tb   = result.tb_test_required      || 'NA';
+        const spec = result.specialist_types;
+        const pc   = result.precertification_required || 'NA';
+        const specLabel = Array.isArray(spec) && spec.length > 0
+            ? spec.join(', ') : (spec || 'NA');
+        body = `
+            <div class="grid grid-cols-3 gap-2">
+                ${stat('TB Test',    tb,        tb === 'Yes'                                          ? 'amber' : 'green')}
+                ${stat('Specialist', Array.isArray(spec) && spec.length > 0 ? spec[0] : (spec || 'NA'),
+                                               Array.isArray(spec) && spec.length > 0                ? 'amber' : 'green')}
+                ${stat('Pre-cert',   pc,        pc === 'Yes'                                          ? 'amber' : 'green')}
+            </div>`;
+    }
+
+    // Source quote
+    const quotes = result.source_statements || [];
+    const quote  = quotes.length
+        ? `<div class="mt-3 pt-3 border-t border-slate-800">
+               <p class="text-xs text-slate-600 italic leading-relaxed">"${quotes[0]}"</p>
+           </div>` : '';
+
+    return header + body + quote;
+}
+
+function badge(type, text) {
+    const cls = type === 'warn'
+        ? 'bg-amber-500/10 border-amber-500/25 text-amber-400'
+        : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400';
+    return `<span class="text-xs border rounded-full px-3 py-1 flex-shrink-0 font-medium ${cls}">${text}</span>`;
+}
+
+function stat(label, value, color) {
+    const tc = { red:'text-red-400', amber:'text-amber-400', green:'text-emerald-400' };
+    return `
+        <div class="bg-slate-800/70 rounded-xl p-3 text-center">
+            <p class="text-xs text-slate-500 mb-1">${label}</p>
+            <p class="font-semibold text-sm ${tc[color]||'text-white'}">${value}</p>
+        </div>`;
+}
+
+// --------------------------------------------------------
+// SCORE PANEL
+// --------------------------------------------------------
+function renderScore(result) {
+    const score   = result.access_quality_score ?? 0;
+    const cat     = result.access_category      ?? '';
+    const align   = result.fda_alignment        ?? '';
+    const deducts = result.score_breakdown?.deductions || [];
+    const bonuses = result.score_breakdown?.bonuses    || [];
+
+    const scoreColor = score >= 75 ? '#10b981'
+                     : score >= 50 ? '#eab308'
+                     : score >= 25 ? '#f97316'
+                     :               '#ef4444';
+
+    const catCls = {
+        'Preferred Access':  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
+        'FDA Parity':        'text-yellow-400  bg-yellow-500/10  border-yellow-500/25',
+        'Restricted Access': 'text-orange-400  bg-orange-500/10  border-orange-500/25',
+        'Highly Restricted': 'text-red-400     bg-red-500/10     border-red-500/25',
+    }[cat] || 'text-slate-400 bg-slate-700 border-slate-600';
+
+    const panel = document.getElementById('score-panel');
+    panel.innerHTML = `
+    <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-7 mt-4 fade-in-up">
+
+        <!-- Gauge -->
+        <div class="flex flex-col items-center mb-8">
+            <svg viewBox="0 0 200 112" class="w-60 mb-1">
+                <!-- Track -->
+                <path d="M 15 100 A 85 85 0 0 1 185 100"
+                      stroke="#1e293b" stroke-width="16" fill="none"
+                      stroke-linecap="round"/>
+                <!-- Score arc (starts at 0, animates to score) -->
+                <path id="score-arc"
+                      d="M 15 100 A 85 85 0 0 1 185 100"
+                      stroke="${scoreColor}" stroke-width="16" fill="none"
+                      stroke-linecap="round"
+                      stroke-dasharray="0 ${ARC_LEN}"
+                      class="gauge-arc"/>
+                <!-- Number -->
+                <text x="100" y="84" text-anchor="middle"
+                      fill="white" font-size="38" font-weight="700"
+                      font-family="system-ui" id="score-number">0</text>
+                <text x="100" y="100" text-anchor="middle"
+                      fill="#475569" font-size="11"
+                      font-family="system-ui">out of 100</text>
+            </svg>
+            <span class="text-sm font-semibold border rounded-full px-5 py-1.5 ${catCls}">
+                ${cat}
+            </span>
+            <p class="text-slate-500 text-xs mt-2">${align}</p>
+        </div>
+
+        <!-- Score context line -->
+        <div class="bg-slate-800/50 border border-slate-700/40 rounded-xl px-4 py-3 mb-5 text-center">
+            <p class="text-xs text-slate-400">
+                Scored against <span class="text-white font-semibold">FDA prescribing information</span>
+                for this brand's PsO indication.
+                Baseline = 50 (FDA parity). Deductions for payer restrictions
+                beyond the FDA label; bonuses for fewer restrictions.
+            </p>
+        </div>
+
+        <!-- Deductions & Bonuses -->
+        <div class="grid grid-cols-2 gap-4">
+
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
+                    Deductions
+                </p>
+                <div class="space-y-2">
+                    ${deducts.length
+                        ? deducts.map(d => `
+                            <div class="flex items-start gap-2 bg-red-500/5 border border-red-500/15 rounded-xl px-3 py-2.5">
+                                <span class="text-red-400 text-xs mt-0.5 flex-shrink-0 font-bold">↓</span>
+                                <span class="text-xs text-slate-300 leading-relaxed">${d}</span>
+                            </div>`).join('')
+                        : `<p class="text-xs text-slate-600 px-1">No deductions</p>`
+                    }
+                </div>
+            </div>
+
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
+                    Bonuses
+                </p>
+                <div class="space-y-2">
+                    ${bonuses.length
+                        ? bonuses.map(b => `
+                            <div class="flex items-start gap-2 bg-emerald-500/5 border border-emerald-500/15 rounded-xl px-3 py-2.5">
+                                <span class="text-emerald-400 text-xs mt-0.5 flex-shrink-0 font-bold">↑</span>
+                                <span class="text-xs text-slate-300 leading-relaxed">${b}</span>
+                            </div>`).join('')
+                        : `<p class="text-xs text-slate-600 px-1">No bonuses</p>`
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>`;
+
+    // Animate gauge + counter
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            const filled = (score / 100) * ARC_LEN;
+            document.getElementById('score-arc').setAttribute(
+                'stroke-dasharray', `${filled} ${ARC_LEN}`
+            );
+            animateCounter('score-number', 0, score, 1400);
+        }, 80);
+    });
+}
+
+function animateCounter(id, from, to, ms) {
+    const el    = document.getElementById(id);
+    const steps = ms / 16;
+    const inc   = (to - from) / steps;
+    let cur = from;
+    const t = setInterval(() => {
+        cur = Math.min(cur + inc, to);
+        el.textContent = Math.round(cur);
+        if (cur >= to) clearInterval(t);
+    }, 16);
+}
+
+// --------------------------------------------------------
+// RESET
+// --------------------------------------------------------
+function resetToUpload() {
+    document.getElementById('upload-view').classList.remove('hidden');
+    document.getElementById('analysis-view').classList.add('hidden');
+    document.getElementById('findings-area').innerHTML = '';
+    document.getElementById('score-panel').innerHTML   = '';
+    document.getElementById('pipeline-steps').innerHTML = '';
+    selectedFile = null;
+    document.getElementById('dz-icon').textContent = '📄';
+    document.getElementById('dz-text').innerHTML =
+        'Drop PDF here or <span class="text-indigo-400">browse files</span>';
+    document.getElementById('pdf-input').value   = '';
+    document.getElementById('brand-select').value = '';
+    resetBtn();
+}
+
+function showAnalysisError(msg) {
+    const area = document.getElementById('findings-area');
+    const card = document.createElement('div');
+    card.className = 'bg-red-500/10 border border-red-500/30 rounded-2xl p-5 text-red-400 text-sm fade-in-up';
+    card.textContent = `Pipeline error: ${msg}`;
+    area.appendChild(card);
+}
+
+</script>
+</body>
+</html>
