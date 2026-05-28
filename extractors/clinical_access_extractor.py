@@ -4,7 +4,8 @@ from extractors.model_router import (
 )
 from utils.extractor_utils import (
     clean_json_output,
-    write_debug_context
+    write_debug_context,
+    collect_wide_fallback
 )
 
 
@@ -104,6 +105,15 @@ class ClinicalAccessExtractor:
             collected_pages = self._collect_proximity(
                 pages,
                 brand
+            )
+
+        if not collected_pages:
+
+            collected_pages = collect_wide_fallback(
+                pages,
+                brand,
+                self.retrieval_keywords,
+                self.exclusion_keywords
             )
 
         return "\n".join(

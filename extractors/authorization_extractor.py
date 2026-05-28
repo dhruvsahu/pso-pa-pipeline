@@ -4,7 +4,8 @@ from extractors.model_router import (
 )
 from utils.extractor_utils import (
     clean_json_output,
-    write_debug_context
+    write_debug_context,
+    collect_wide_fallback
 )
 
 
@@ -18,6 +19,7 @@ class AuthorizationExtractor:
 
         self.authorization_keywords = [
 
+            "prior authorization",
             "initial approval",
             "coverage duration",
             "authorization duration",
@@ -25,7 +27,9 @@ class AuthorizationExtractor:
             "renewal criteria",
             "continued therapy",
             "renewal",
-            "approval duration"
+            "approval duration",
+            "approved for",
+            "authorized for"
         ]
 
         # -------------------------------------------------
@@ -49,6 +53,8 @@ class AuthorizationExtractor:
 
     # =====================================================
     # AUTHORIZATION CONTEXT EXTRACTION
+    # Two-pass: strict brand+keyword, then proximity
+    # fallback — same pattern as other extractors.
     # =====================================================
 
     def extract_authorization_context(
@@ -57,55 +63,113 @@ class AuthorizationExtractor:
         brand
     ):
 
-        collected = []
+        collected = self._collect_strict(pages, brand)
 
-        capture = False
+        if not collected:
+            collected = self._collect_proximity(
+                pages, brand
+            )
+
+        if not collected:
+            collected = collect_wide_fallback(
+                pages,
+                brand,
+                self.authorization_keywords,
+                self.exclusion_keywords
+            )
+
+        return "\n".join(collected)
+
+    # =====================================================
+    # PASS 1 — STRICT
+    # =====================================================
+
+    def _collect_strict(self, pages, brand):
+
+        collected = []
 
         for page in pages:
 
             text = page["text"]
-
             lower_text = text.lower()
 
-            # -----------------------------------------
-            # START CAPTURE
-            # -----------------------------------------
-
             if any(
-                keyword in lower_text
-                for keyword in self.authorization_keywords
+                ex in lower_text
+                for ex in self.exclusion_keywords
             ):
+                continue
 
-                capture = True
+            brand_match = brand.lower() in lower_text
 
-            # -----------------------------------------
-            # STOP CAPTURE
-            # -----------------------------------------
+            auth_match = any(
+                kw in lower_text
+                for kw in self.authorization_keywords
+            )
 
-            if any(
-                keyword in lower_text
-                for keyword in self.exclusion_keywords
-            ):
-
-                capture = False
-
-            # -----------------------------------------
-            # COLLECT
-            # -----------------------------------------
-
-            if capture:
+            if brand_match and auth_match:
 
                 collected.append(
-
-                    f"\n===== PAGE "
-                    f"{page['page_number']} =====\n"
-
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} =====\n\n"
                     + text
                 )
 
-        return "\n".join(
-            collected
-        )
+        return collected
+
+    # =====================================================
+    # PASS 2 — PROXIMITY FALLBACK
+    # =====================================================
+
+    def _collect_proximity(
+        self, pages, brand, window=2
+    ):
+
+        brand_indices = set()
+
+        for idx, page in enumerate(pages):
+            if brand.lower() in page["text"].lower():
+                brand_indices.add(idx)
+
+        collected = []
+        seen = set()
+
+        for idx, page in enumerate(pages):
+
+            text = page["text"]
+            lower_text = text.lower()
+
+            if any(
+                ex in lower_text
+                for ex in self.exclusion_keywords
+            ):
+                continue
+
+            auth_match = any(
+                kw in lower_text
+                for kw in self.authorization_keywords
+            )
+
+            if not auth_match:
+                continue
+
+            near_brand = any(
+                abs(idx - b) <= window
+                for b in brand_indices
+            )
+
+            if (
+                near_brand
+                and page["page_number"] not in seen
+            ):
+                seen.add(page["page_number"])
+                collected.append(
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} "
+                    f"[proximity] =====\n\n"
+                    + text
+                )
+
+        return collected
 
     # =====================================================
     # LLM EXTRACTION
