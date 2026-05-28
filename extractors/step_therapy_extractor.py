@@ -281,8 +281,6 @@ class StepTherapyExtractor:
             "experimental, investigational, or unproven",
             "background",
             "references",
-            "coding",
-            "appendix",
             "review history",
             "policy history"
         ]
