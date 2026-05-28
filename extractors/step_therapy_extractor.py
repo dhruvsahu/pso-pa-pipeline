@@ -193,11 +193,46 @@ class StepTherapyExtractor:
 
         return collected
 
+    # High-signal keywords that indicate actual step-therapy
+    # CRITERIA pages (vs. background / FDA indication tables)
+    CRITERIA_SIGNALS = [
+        "criteria for approval",
+        "criteria for initial",
+        "initial evaluation",
+        "initial approval",
+        "tried and failed",
+        "inadequate response",
+        "prior therapy",
+        "trial of",
+        "step 1",
+        "step 2",
+        "preferred",
+        "non-preferred",
+        "approval criteria",
+        "coverage criteria",
+        "medical necessity",
+    ]
+
+    def _relevance_score(self, page_text):
+        """
+        Score a collected page by how many high-signal
+        step-criteria keywords it contains.
+        Higher = more likely to be the actual criteria page.
+        """
+        lower = page_text.lower()
+        return sum(
+            1 for kw in self.CRITERIA_SIGNALS
+            if kw in lower
+        )
+
     def retrieve_context(self, pages, brand):
         """
         Primary: two-pass brand+keyword retrieval.
-        Fallback: extract_approval_section (section-header
-        approach) for single-drug dedicated policy docs.
+        Pages are sorted by criteria-signal density so
+        the LLM's 20K context window sees criteria pages
+        first, not background/FDA-indication tables.
+        Fallback: extract_approval_section for single-drug
+        dedicated policy docs.
         """
 
         collected = self._collect_strict(pages, brand)
@@ -208,6 +243,12 @@ class StepTherapyExtractor:
             )
 
         if collected:
+            # Sort highest-signal pages first so they land
+            # inside the prompt's 20K char truncation window
+            collected.sort(
+                key=self._relevance_score,
+                reverse=True
+            )
             return "\n".join(collected)
 
         # Fallback to section-header approach
