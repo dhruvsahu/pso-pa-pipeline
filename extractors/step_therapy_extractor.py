@@ -219,20 +219,37 @@ class StepTherapyExtractor:
 
     def retrieve_context(self, pages, brand):
         """
-        Primary: two-pass brand+keyword retrieval.
-        Pages are sorted by criteria-signal density so
-        the LLM's 20K context window sees criteria pages
-        first, not background/FDA-indication tables.
+        Primary: strict + proximity run together (union).
+        Running both means pages that mention the brand by
+        name AND pages adjacent to those that hold the
+        criteria text (but don't repeat the brand name) are
+        all included before sorting.
+
+        Previously the proximity pass was only a fallback
+        for when strict returned nothing — that caused criteria
+        pages 2-3 to be missed when page 1 (brand mention in
+        header) already satisfied the strict pass.
+
+        Pages are sorted by criteria-signal density so the
+        LLM's 20K window sees criteria pages first.
         Fallback: extract_approval_section for single-drug
         dedicated policy docs.
         """
 
-        collected = self._collect_strict(pages, brand)
+        strict = self._collect_strict(pages, brand)
+        proximity = self._collect_proximity(pages, brand)
 
-        if not collected:
-            collected = self._collect_proximity(
-                pages, brand
-            )
+        # Union — deduplicate by page number extracted from
+        # the "===== PAGE N =====" header line.
+        import re as _re
+        seen_page_nums = set()
+        collected = []
+        for page_text in strict + proximity:
+            m = _re.search(r"===== PAGE (\d+)", page_text)
+            key = m.group(1) if m else page_text.strip()[:60]
+            if key not in seen_page_nums:
+                seen_page_nums.add(key)
+                collected.append(page_text)
 
         if collected:
             collected = sort_by_relevance(

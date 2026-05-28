@@ -85,25 +85,20 @@ class UtilizationManagementExtractor:
         # drug QL sections.
         # ---------------------------------------------
 
-        collected_pages = self._collect_strict(
-            pages,
-            brand
-        )
+        # Always run both passes and union the results.
+        import re as _re
 
-        # ---------------------------------------------
-        # PASS 2 — proximity fallback: if strict pass
-        # found nothing, take utilization-keyword pages
-        # within ±2 pages of a brand-match page.
-        # Handles QL tables where drug name is in a row
-        # but section header is on the previous page.
-        # ---------------------------------------------
+        strict = self._collect_strict(pages, brand)
+        proximity = self._collect_proximity(pages, brand)
 
-        if not collected_pages:
-
-            collected_pages = self._collect_proximity(
-                pages,
-                brand
-            )
+        seen = set()
+        collected_pages = []
+        for page_text in strict + proximity:
+            m = _re.search(r"PAGE (\d+)", page_text)
+            key = m.group(1) if m else page_text.strip()[:60]
+            if key not in seen:
+                seen.add(key)
+                collected_pages.append(page_text)
 
         if not collected_pages:
 
