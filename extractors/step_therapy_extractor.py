@@ -112,6 +112,29 @@ class StepTherapyExtractor:
         "table of contents",
     ]
 
+    # Tight signals used ONLY for sorting collected pages.
+    # These appear on actual PA criteria pages but NOT on
+    # clinical background / FDA indication table pages.
+    # Deliberately excludes broad terms like "biologic",
+    # "inadequate response", "phototherapy" that match
+    # background sections and skew the ranking.
+    STEP_SORT_SIGNALS = [
+        "criteria for approval",
+        "criteria for initial",
+        "initial evaluation",
+        "approval criteria",
+        "coverage criteria",
+        "medical necessity",
+        "will be approved",
+        "target agent",
+        "step 1",
+        "step 2",
+        "preferred",
+        "non-preferred",
+        "initial authorization",
+        "prior authorization criteria",
+    ]
+
     # =====================================================
     # TWO-PASS KEYWORD RETRIEVAL
     # =====================================================
@@ -213,7 +236,7 @@ class StepTherapyExtractor:
 
         if collected:
             collected = sort_by_relevance(
-                collected, self.STEP_KEYWORDS
+                collected, self.STEP_SORT_SIGNALS
             )
             return "\n".join(collected)
 
