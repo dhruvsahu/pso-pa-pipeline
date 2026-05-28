@@ -1,6 +1,6 @@
 import os
 
-from document_processor import DocumentProcessor
+from utils.document_processor import DocumentProcessor
 from extractors.age_extractor import AgeExtractor
 from extractors.step_therapy_extractor import StepTherapyExtractor
 from extractors.authorization_extractor import AuthorizationExtractor

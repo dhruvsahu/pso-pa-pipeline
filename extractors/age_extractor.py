@@ -1,6 +1,6 @@
 import re
 import json
-from extractors.model_router import (
+from utils.model_router import (
     ModelRouter
 )
 from utils.extractor_utils import (

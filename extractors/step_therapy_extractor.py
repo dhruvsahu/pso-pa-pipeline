@@ -1,6 +1,6 @@
 import json
 import pandas as pd
-from extractors.model_router import (
+from utils.model_router import (
     ModelRouter
 )
 from utils.extractor_utils import (
@@ -749,7 +749,7 @@ Required JSON format:
 
 if __name__ == "__main__":
 
-    from document_processor import (
+    from utils.document_processor import (
         DocumentProcessor
     )
 
