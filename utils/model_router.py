@@ -21,6 +21,11 @@ class ModelRouter:
     # sit right on the edge
     GROQ_TPM_TARGET = int(GROQ_TPM_LIMIT * 0.90)
 
+    # Gemini RPM ceiling (free tier: 15 RPM)
+    # Target 80% so we never sit right on the edge
+    GEMINI_RPM_LIMIT = 15
+    GEMINI_RPM_TARGET = int(GEMINI_RPM_LIMIT * 0.80)  # 12
+
     def __init__(self):
 
         load_dotenv()
@@ -79,11 +84,14 @@ class ModelRouter:
                 )
             )
 
+            # Each entry: unix timestamp of a completed request
+            self._gemini_rpm_window = deque()
+
     # =================================================
     # GROQ TOKEN-AWARE THROTTLE
     # Tracks tokens used in the last 60s and sleeps
     # only as long as needed to stay under GROQ_TPM_TARGET.
-    # Gemini and Ollama paths never touch this.
+    # Gemini path uses its own RPM throttle below.
     # =================================================
 
     def _groq_throttle(self, tokens_about_to_use):
@@ -136,6 +144,54 @@ class ModelRouter:
                 f"{tokens_in_window} tokens used "
                 f"in last 60s "
                 f"(target {self.GROQ_TPM_TARGET}) — "
+                f"waiting {sleep_needed:.1f}s"
+            )
+
+            time.sleep(max(sleep_needed, 1))
+
+    # =================================================
+    # GEMINI RPM-AWARE THROTTLE
+    # Tracks request timestamps in the last 60s and
+    # sleeps only as long as needed to stay under
+    # GEMINI_RPM_TARGET before each API call.
+    # Replaces the hardcoded sleep in the pipeline.
+    # =================================================
+
+    def _gemini_throttle(self):
+        """
+        Call BEFORE each Gemini request.
+        Evicts timestamps older than 60s, then waits
+        if the rolling count would exceed RPM_TARGET.
+        Records the timestamp after proceeding.
+        """
+
+        window = self._gemini_rpm_window
+
+        while True:
+
+            now = time.time()
+
+            # Drop entries outside the 60s window
+            while (
+                window
+                and now - window[0] >= 60
+            ):
+                window.popleft()
+
+            if len(window) < self.GEMINI_RPM_TARGET:
+                # Safe to proceed — record this request
+                window.append(now)
+                return
+
+            # Too many requests in the last 60s —
+            # sleep until the oldest one ages out
+            oldest = window[0]
+            sleep_needed = oldest + 60 - now + 0.5
+
+            print(
+                f"[GEMINI THROTTLE] "
+                f"{len(window)} requests in last 60s "
+                f"(target {self.GEMINI_RPM_TARGET} RPM) — "
                 f"waiting {sleep_needed:.1f}s"
             )
 
@@ -265,6 +321,10 @@ class ModelRouter:
             print(
                 "[LLM] Using Gemini"
             )
+
+            # RPM-aware throttle — sleeps only as long
+            # as needed, replaces fixed pipeline sleeps
+            self._gemini_throttle()
 
             max_retries = 6
             wait = 30

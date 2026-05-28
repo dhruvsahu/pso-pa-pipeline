@@ -667,11 +667,37 @@ class StepTherapyExtractor:
           ]
         → generic_steps = 1  ← ONE slot, regardless of threshold being 2
 
+        CRITICAL RULE — "IF INTOLERANT / CONTRAINDICATED" CASCADE:
+        When requirements are structured as a fallback chain like:
+          "Must fail A.
+           If intolerant/contraindicated to A → must fail B.
+           If intolerant/contraindicated to A and B → must fail C."
+        This is ONE slot with A, B, and C as alternatives — NOT three separate steps.
+        The patient only ever walks ONE path through the chain.
+        Put ALL items in the cascade into a SINGLE slot's "alternatives" list.
+
+        Example C — intolerance cascade:
+        "Member must fail methotrexate (MTX).
+         If intolerant to MTX, must fail cyclosporine or acitretin.
+         If intolerant to MTX, cyclosporine, and acitretin, must fail phototherapy."
+        → generic_step_slots: [
+              {{"alternatives": ["methotrexate", "cyclosporine", "acitretin", "phototherapy"]}}
+          ]
+        → generic_steps = 1  ← ONE slot, the chain is one required trial
+
+        KEY SIGNAL PHRASES that indicate a cascade (not additive steps):
+        - "if intolerant to"
+        - "if contraindicated to"
+        - "if unable to take"
+        - "if not tolerated"
+        - "unless contraindicated"
+
         PHOTOTHERAPY RULE:
         Mark phototherapy_required = "Yes" ONLY if phototherapy is listed as
         its OWN standalone sequential step (e.g. "must complete phototherapy course").
         If phototherapy appears as one option INSIDE a parenthetical alternatives list
-        (as in Example B above), do NOT set phototherapy_required = "Yes" —
+        (as in Example B above), or inside an intolerance cascade (as in Example C),
+        do NOT set phototherapy_required = "Yes" —
         it is just one alternative within the generic slot.
 
         STEP THERAPY GRID / TABLE FORMAT:

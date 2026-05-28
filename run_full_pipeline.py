@@ -38,7 +38,8 @@ from utils.document_processor import (
 
 BASE_FOLDER = "Sample_PsO_ADS_Track"
 OUTPUT_PATH = "outputs/final_access_results.json"
-SLEEP_BETWEEN_EXTRACTORS = 20   # seconds — tune for rate limits
+# Rate limiting is now handled by ModelRouter._gemini_throttle()
+# No fixed sleep needed here.
 
 
 def main():
@@ -146,7 +147,7 @@ def main():
                 f"[TIME] Age: "
                 f"{round(time.time() - start, 2)}s"
             )
-            time.sleep(SLEEP_BETWEEN_EXTRACTORS)
+            # throttling handled by ModelRouter
 
             # =============================================
             # STEP THERAPY EXTRACTION
@@ -161,7 +162,7 @@ def main():
                 f"[TIME] Step Therapy: "
                 f"{round(time.time() - start, 2)}s"
             )
-            time.sleep(SLEEP_BETWEEN_EXTRACTORS)
+            # throttling handled by ModelRouter
 
             # =============================================
             # AUTHORIZATION
@@ -176,7 +177,7 @@ def main():
                 f"[TIME] Authorization: "
                 f"{round(time.time() - start, 2)}s"
             )
-            time.sleep(SLEEP_BETWEEN_EXTRACTORS)
+            # throttling handled by ModelRouter
 
             # =============================================
             # UTILIZATION MANAGEMENT
@@ -191,7 +192,7 @@ def main():
                 f"[TIME] Utilization: "
                 f"{round(time.time() - start, 2)}s"
             )
-            time.sleep(SLEEP_BETWEEN_EXTRACTORS)
+            # throttling handled by ModelRouter
 
             # =============================================
             # CLINICAL ACCESS
