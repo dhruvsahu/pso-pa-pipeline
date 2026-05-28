@@ -197,28 +197,6 @@ class AccessQualityScorer:
             )
 
         # =================================================
-        # PRECERTIFICATION
-        # FDA baseline: no precert mandate in label
-        # Penalty: -2 (minor; universal in payer world)
-        # Bonus:   +5 if absent (above FDA parity)
-        # =================================================
-
-        precert = clinical_access_result.get(
-            "precertification_required"
-        )
-
-        if precert == "Yes":
-            score -= 2
-            deductions.append(
-                "Precertification required (-2)"
-            )
-        elif precert == "No":
-            score += 5
-            bonuses.append(
-                "No precertification required (+5)"
-            )
-
-        # =================================================
         # REAUTHORIZATION
         # FDA baseline: reauthorization_expected = "No"
         # Penalty: -5 if payer requires reauth

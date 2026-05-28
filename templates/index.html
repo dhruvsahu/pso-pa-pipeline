@@ -386,15 +386,13 @@ function cardContent(step, result, meta) {
 
     // ---- CLINICAL ACCESS ----
     else if (step === 'clinical_access') {
-        const tb   = result.tb_test_required          || 'NA';
+        const tb   = result.tb_test_required || 'NA';
         const spec = result.specialist_types;
-        const pc   = result.precertification_required || 'NA';
         body = `
-            <div class="grid grid-cols-3 gap-2">
-                ${stat('TB Test',    tb,        tb === 'Yes'                                ? 'amber' : 'green')}
+            <div class="grid grid-cols-2 gap-2">
+                ${stat('TB Test',    tb,        tb === 'Yes'                           ? 'amber' : 'green')}
                 ${stat('Specialist', Array.isArray(spec) && spec.length > 0 ? spec[0] : (spec || 'NA'),
-                                               Array.isArray(spec) && spec.length > 0      ? 'amber' : 'green')}
-                ${stat('Pre-cert',   pc,        pc === 'Yes'                                ? 'amber' : 'green')}
+                                               Array.isArray(spec) && spec.length > 0 ? 'amber' : 'green')}
             </div>`;
     }
 
