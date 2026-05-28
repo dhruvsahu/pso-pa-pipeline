@@ -690,13 +690,38 @@ Required JSON format:
         list all alternatives inside ONE slot's "alternatives" list.
         AND requirements between distinct steps each get their own separate slot.
 
-        Example:
+        Example A — sequential AND steps:
         "Must try Humira OR Enbrel, then must try Cosentyx"
         → brand_step_slots: [
               {{"alternatives": ["Humira", "Enbrel"]}},
               {{"alternatives": ["Cosentyx"]}}
           ]
-        → brand has 2 slots (2 steps), regardless of OR alternatives inside each slot.
+        → brand_steps = 2
+
+        CRITICAL RULE — "AT LEAST N OF [LIST]" PATTERN:
+        If the policy says "failed at least N of the following: [list]"
+        OR "unresponsive to at least N conventional therapies: [list]"
+        OR "inadequate response to N therapies from: [list]"
+        this is EXACTLY ONE SLOT — NOT N slots and NOT len(list) slots.
+        Put ALL items from the list as alternatives in ONE slot.
+        The threshold number (N) does NOT multiply the slot count.
+
+        Example B — "at least N of list":
+        "Unresponsive to at least 2 conventional therapies
+        (topical corticosteroids, vitamin D analogs, Tazorac,
+        topical tacrolimus, Elidel, phototherapy)"
+        → generic_step_slots: [
+              {{"alternatives": ["topical corticosteroids", "vitamin D analogs",
+                                "Tazorac", "topical tacrolimus", "Elidel", "phototherapy"]}}
+          ]
+        → generic_steps = 1  ← ONE slot, regardless of threshold being 2
+
+        PHOTOTHERAPY RULE:
+        Mark phototherapy_required = "Yes" ONLY if phototherapy is listed as
+        its OWN standalone sequential step (e.g. "must complete phototherapy course").
+        If phototherapy appears as one option INSIDE a parenthetical alternatives list
+        (as in Example B above), do NOT set phototherapy_required = "Yes" —
+        it is just one alternative within the generic slot.
 
         IGNORE:
         - HCPCS / NDC / billing / dosing-only sections
@@ -721,6 +746,7 @@ Required JSON format:
         - Each element in brand_step_slots / generic_step_slots is ONE required step
         - OR alternatives for the same step go inside the same slot's "alternatives" list
         - AND requirements between steps each get their own separate slot
+        - "at least N of [list]" → 1 slot containing all list items, NOT N slots
         - Return empty list [] for brand_step_slots or generic_step_slots if none required
         - phototherapy_required must be EXACTLY "Yes", "No", or "NA"
         - Do NOT hallucinate therapies — use ONLY evidence from the provided context
