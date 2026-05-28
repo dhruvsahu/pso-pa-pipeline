@@ -28,10 +28,13 @@ class AuthorizationExtractor:
             "reauthorization",
             "renewal criteria",
             "continued therapy",
+            "continuation",
             "renewal",
             "approval duration",
             "approved for",
-            "authorized for"
+            "authorized for",
+            "authorization of",
+            "may be granted",
         ]
 
         # -------------------------------------------------
@@ -61,12 +64,20 @@ class AuthorizationExtractor:
         brand
     ):
 
-        collected = self._collect_strict(pages, brand)
+        # Always run both passes and union the results.
+        import re as _re
 
-        if not collected:
-            collected = self._collect_proximity(
-                pages, brand
-            )
+        strict = self._collect_strict(pages, brand)
+        proximity = self._collect_proximity(pages, brand)
+
+        seen = set()
+        collected = []
+        for page_text in strict + proximity:
+            m = _re.search(r"PAGE (\d+)", page_text)
+            key = m.group(1) if m else page_text.strip()[:60]
+            if key not in seen:
+                seen.add(key)
+                collected.append(page_text)
 
         if not collected:
             collected = collect_wide_fallback(

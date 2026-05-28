@@ -10,6 +10,8 @@ import os
 
 BRAND_TO_GENERIC = {
     "stelara":    "ustekinumab",
+    "yesintek":   "ustekinumab",   # ustekinumab-kfce biosimilar
+    "otulfi":     "ustekinumab",   # ustekinumab-aauz biosimilar
     "humira":     "adalimumab",
     "amjevita":   "adalimumab",   # adalimumab biosimilar
     "hadlima":    "adalimumab",

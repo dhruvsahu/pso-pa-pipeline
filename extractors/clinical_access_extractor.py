@@ -84,26 +84,24 @@ class ClinicalAccessExtractor:
         # policy sections about unrelated drugs.
         # ---------------------------------------------
 
-        collected_pages = self._collect_strict(
-            pages,
-            brand
-        )
+        # Always run both passes and union the results.
+        # Strict alone misses criteria pages that don't
+        # repeat the brand name (common in dedicated
+        # single-drug policy docs where brand appears
+        # only in the header and reference section).
+        import re as _re
 
-        # ---------------------------------------------
-        # PASS 2 — proximity fallback: if strict pass
-        # found nothing, take access-keyword pages that
-        # sit within ±2 pages of a brand-match page.
-        # Handles policies where TB / precert language
-        # lives in a shared section that doesn't repeat
-        # the brand name.
-        # ---------------------------------------------
+        strict = self._collect_strict(pages, brand)
+        proximity = self._collect_proximity(pages, brand)
 
-        if not collected_pages:
-
-            collected_pages = self._collect_proximity(
-                pages,
-                brand
-            )
+        seen = set()
+        collected_pages = []
+        for page_text in strict + proximity:
+            m = _re.search(r"PAGE (\d+)", page_text)
+            key = m.group(1) if m else page_text.strip()[:60]
+            if key not in seen:
+                seen.add(key)
+                collected_pages.append(page_text)
 
         if not collected_pages:
 
