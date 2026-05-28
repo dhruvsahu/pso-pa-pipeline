@@ -6,7 +6,8 @@ from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
     collect_wide_fallback,
-    get_brand_aliases
+    get_brand_aliases,
+    sort_by_relevance
 )
 
 
@@ -112,6 +113,10 @@ class ClinicalAccessExtractor:
                 self.retrieval_keywords,
                 self.exclusion_keywords
             )
+
+        collected_pages = sort_by_relevance(
+            collected_pages, self.retrieval_keywords
+        )
 
         return "\n".join(
             collected_pages

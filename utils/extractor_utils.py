@@ -84,6 +84,34 @@ def clean_json_output(text):
     return text.strip()
 
 
+def sort_by_relevance(collected_pages, signal_keywords):
+    """
+    Re-order collected context pages so the most relevant ones
+    appear first — before the LLM's 20K-char truncation window
+    cuts off.
+
+    Relevance = number of signal_keywords found in the page text.
+    Pages that match more keywords (actual criteria pages) float
+    to the top; background / FDA-indication table pages sink to
+    the bottom and get truncated instead.
+
+    Each extractor passes its own retrieval_keywords list so the
+    scoring is tuned to that extractor's content type.
+    """
+    def _score(page_text):
+        lower = page_text.lower()
+        return sum(
+            1 for kw in signal_keywords
+            if kw in lower
+        )
+
+    return sorted(
+        collected_pages,
+        key=_score,
+        reverse=True
+    )
+
+
 def collect_wide_fallback(
     pages,
     brand,

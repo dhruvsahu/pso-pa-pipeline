@@ -6,7 +6,8 @@ from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
     collect_wide_fallback,
-    get_brand_aliases
+    get_brand_aliases,
+    sort_by_relevance
 )
 
 
@@ -74,6 +75,10 @@ class AuthorizationExtractor:
                 self.authorization_keywords,
                 self.exclusion_keywords
             )
+
+        collected = sort_by_relevance(
+            collected, self.authorization_keywords
+        )
 
         return "\n".join(collected)
 
