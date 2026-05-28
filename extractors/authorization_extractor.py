@@ -42,7 +42,9 @@ class AuthorizationExtractor:
             "references",
             "coding",
             "billing",
-            "appendix",
+            # "appendix" removed — clinical criteria pages commonly
+            # contain "(see Appendix A)" cross-references, causing
+            # pages with reauthorization/duration info to be dropped.
             "policy history",
             "review history",
             "table of contents"

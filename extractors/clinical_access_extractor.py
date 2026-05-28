@@ -63,7 +63,9 @@ class ClinicalAccessExtractor:
         self.exclusion_keywords = [
 
             "references",
-            "appendix",
+            # "appendix" removed — clinical criteria pages commonly
+            # contain "(see Appendix A)" cross-references, causing
+            # pages with TB/specialist/precert info to be dropped.
             "policy history",
             "coding",
             "billing",
