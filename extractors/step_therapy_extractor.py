@@ -671,14 +671,24 @@ Required JSON format:
         For each required step in the combined set, classify as:
 
         BRANDED step if:
-        - It names a specific biologic or brand drug
-        - It names a drug class AND the target drug belongs to that class
-        - It names a preferred ustekinumab or adalimumab product
+        - It names a specific BIOLOGIC drug (injectable/infused monoclonal antibody
+          or fusion protein — e.g. Humira, Enbrel, Remicade, Cosentyx, Stelara,
+          Tremfya, Skyrizi, Taltz, Otezla, Cimzia, Simponi, Siliq, Ilumya)
+        - It names a biologic drug CLASS (e.g. "TNF blocker", "IL-17 inhibitor",
+          "IL-23 inhibitor") AND the target drug belongs to that class
+        - It names a preferred biologic biosimilar product
 
         GENERIC step if:
-        - It names a non-biologic / topical agent
-        - It names a required step but does NOT specify a biologic or brand
-        (no explicit biologic targeting → defaults to generic)
+        - It names ANY topical agent — regardless of whether it is a brand name
+          (Tazorac, Elidel, Protopic, Dovonex) or a generic name
+          (tazarotene, pimecrolimus, tacrolimus, calcipotriene)
+        - It names a conventional systemic non-biologic
+          (methotrexate, cyclosporine, acitretin, apremilast)
+        - It names a required step but does NOT specify a biologic
+          (no biologic targeting → defaults to generic)
+
+        IMPORTANT: Tazorac, Elidel, Protopic, and similar topical brand names
+        are NOT biologics. They MUST go in generic_step_slots, never brand_step_slots.
 
         PHOTOTHERAPY step if:
         - It mentions phototherapy, PUVA, or UVB
@@ -722,6 +732,39 @@ Required JSON format:
         If phototherapy appears as one option INSIDE a parenthetical alternatives list
         (as in Example B above), do NOT set phototherapy_required = "Yes" —
         it is just one alternative within the generic slot.
+
+        STEP THERAPY GRID / TABLE FORMAT:
+        Some policies present step therapy as a GRID TABLE where:
+        - Rows = indications (e.g. Psoriasis, RA, CD)
+        - Columns = step positions (Step 1/Preferred, Step 2, Step 3 ... or N/A)
+        - Each cell lists the drugs allowed at that step for that indication
+
+        HOW TO READ A STEP THERAPY GRID:
+        1. Find the ROW for Psoriasis (PS) or Plaque Psoriasis (PsO).
+        2. Find which COLUMN the target drug appears in.
+        3. All drugs in EARLIER columns (lower step number) for the SAME ROW
+           are REQUIRED prior steps before the target drug can be approved.
+        4. If the target drug is in Column 1 / Step 1 / "Preferred" column:
+           → NO prior steps required → brand_step_slots = [], generic_step_slots = []
+        5. If the target drug is in Column 2:
+           → The Column 1 drugs are required prior steps (1 brand slot if biologics)
+        6. If the target drug is in Column 3:
+           → Column 1 AND Column 2 drugs are each a required prior step (2 brand slots)
+
+        GRID EXAMPLE:
+        Step 1 (Preferred): Humira, Cosentyx, Enbrel, Skyrizi, Tremfya
+        Step 2 (N/A): —
+        Step 3: Cimzia, Ilumya
+        Step 4: Siliq, Taltz, Bimzelx
+
+        For target drug = Humira → brand_step_slots = []  (Step 1, no prior steps)
+        For target drug = Siliq  → brand_step_slots = [
+              {{"alternatives": ["Humira", "Cosentyx", "Enbrel", "Skyrizi", "Tremfya"]}}
+          ]
+          (must try one Step 1 biologic first = 1 brand slot)
+
+        IMPORTANT: IGNORE rows for other indications (RA, CD, UC, PsA, etc.)
+        Focus ONLY on Psoriasis (PS) / Plaque Psoriasis (PsO) row.
 
         IGNORE:
         - HCPCS / NDC / billing / dosing-only sections
