@@ -1,11 +1,12 @@
 import json
-from extractors.model_router import (
+from utils.model_router import (
     ModelRouter
 )
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
-    collect_wide_fallback
+    collect_wide_fallback,
+    get_brand_aliases
 )
 
 
@@ -132,6 +133,8 @@ class ClinicalAccessExtractor:
 
         collected = []
 
+        aliases = get_brand_aliases(brand)
+
         for page in pages:
 
             text = page["text"]
@@ -144,7 +147,9 @@ class ClinicalAccessExtractor:
             ):
                 continue
 
-            brand_match = brand.lower() in lower_text
+            brand_match = any(
+                alias in lower_text for alias in aliases
+            )
 
             access_match = any(
                 keyword in lower_text
@@ -174,13 +179,17 @@ class ClinicalAccessExtractor:
         window=2
     ):
 
-        # Build a set of page indices where brand appears
+        # Build a set of page indices where brand or generic appears
+        aliases = get_brand_aliases(brand)
+
         brand_indices = set()
 
         for idx, page in enumerate(pages):
 
-            if brand.lower() in page["text"].lower():
-
+            if any(
+                alias in page["text"].lower()
+                for alias in aliases
+            ):
                 brand_indices.add(idx)
 
         # Collect pages with access keywords that are

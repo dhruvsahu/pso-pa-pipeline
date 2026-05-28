@@ -1,11 +1,12 @@
 import re
 import json
-from extractors.model_router import (
+from utils.model_router import (
     ModelRouter
 )
 from utils.extractor_utils import (
     clean_json_output,
-    write_debug_context
+    write_debug_context,
+    get_brand_aliases
 )
 
 class AgeExtractor:
@@ -89,10 +90,9 @@ class AgeExtractor:
 
         text_lower = page_text.lower()
 
-        # Brand weighting
-        brand_matches = text_lower.count(brand.lower())
-
-        score += brand_matches * 20
+        # Brand weighting — count both brand and generic
+        for alias in get_brand_aliases(brand):
+            score += text_lower.count(alias) * 20
 
         # Keyword scoring
         for keyword in self.keywords:
@@ -139,8 +139,9 @@ class AgeExtractor:
 
             text_lower = page["text"].lower()
 
-            # Hard brand filter
-            if brand.lower() not in text_lower:
+            # Hard brand/generic filter
+            aliases = get_brand_aliases(brand)
+            if not any(alias in text_lower for alias in aliases):
                 continue
 
             score = self.score_page(

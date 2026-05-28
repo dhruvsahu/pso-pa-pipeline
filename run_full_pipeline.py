@@ -27,7 +27,7 @@ from access_quality_scorer import (
     AccessQualityScorer
 )
 
-from document_processor import (
+from utils.document_processor import (
     DocumentProcessor
 )
 
