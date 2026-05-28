@@ -63,14 +63,9 @@ class UtilizationManagementExtractor:
 
         self.exclusion_keywords = [
 
-            # NOTE: "appendix", "coding", "billing", "hcpcs", "ndc"
-            # intentionally absent — payers like Wellmark put their
-            # QL tables inside an appendix section, and many embed
-            # HCPCS/NDC codes on the same page as the QL table.
-            # The retrieval keywords ("quantity limit", "vials", etc.)
-            # are specific enough to keep retrieval relevant without
-            # these broad exclusions.
-            "policy history"
+            "policy history",
+            "review history",
+            "table of contents"
         ]
 
     # =====================================================

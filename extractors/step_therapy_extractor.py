@@ -106,18 +106,8 @@ class StepTherapyExtractor:
     ]
 
     STEP_EXCLUSIONS = [
-        "references",
-        # "appendix" removed — policies like WellSense cross-reference
-        # "(see Appendix A)" inside clinical criteria pages, causing
-        # those pages to be excluded before keyword matching runs.
-        # Appendix pages (dosing tables, DMARD lists) won't have step
-        # therapy keywords so they won't produce noise.
         "policy history",
         "review history",
-        "coding",
-        "billing",
-        "hcpcs",
-        "ndc",
         "table of contents",
     ]
 
