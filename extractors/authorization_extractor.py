@@ -5,7 +5,8 @@ from utils.model_router import (
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
-    collect_wide_fallback
+    collect_wide_fallback,
+    get_brand_aliases
 )
 
 
@@ -88,6 +89,8 @@ class AuthorizationExtractor:
 
         collected = []
 
+        aliases = get_brand_aliases(brand)
+
         for page in pages:
 
             text = page["text"]
@@ -99,7 +102,9 @@ class AuthorizationExtractor:
             ):
                 continue
 
-            brand_match = brand.lower() in lower_text
+            brand_match = any(
+                alias in lower_text for alias in aliases
+            )
 
             auth_match = any(
                 kw in lower_text
@@ -124,10 +129,15 @@ class AuthorizationExtractor:
         self, pages, brand, window=2
     ):
 
+        aliases = get_brand_aliases(brand)
+
         brand_indices = set()
 
         for idx, page in enumerate(pages):
-            if brand.lower() in page["text"].lower():
+            if any(
+                alias in page["text"].lower()
+                for alias in aliases
+            ):
                 brand_indices.add(idx)
 
         collected = []

@@ -5,7 +5,8 @@ from utils.model_router import (
 )
 from utils.extractor_utils import (
     clean_json_output,
-    write_debug_context
+    write_debug_context,
+    get_brand_aliases
 )
 
 class StepTherapyExtractor:
@@ -124,6 +125,8 @@ class StepTherapyExtractor:
 
         collected = []
 
+        aliases = get_brand_aliases(brand)
+
         for page in pages:
 
             text = page["text"]
@@ -136,7 +139,7 @@ class StepTherapyExtractor:
                 continue
 
             if (
-                brand.lower() in lower
+                any(alias in lower for alias in aliases)
                 and any(
                     kw in lower
                     for kw in self.STEP_KEYWORDS
@@ -154,9 +157,11 @@ class StepTherapyExtractor:
         self, pages, brand, window=2
     ):
 
+        aliases = get_brand_aliases(brand)
+
         brand_indices = {
             idx for idx, p in enumerate(pages)
-            if brand.lower() in p["text"].lower()
+            if any(alias in p["text"].lower() for alias in aliases)
         }
 
         collected = []

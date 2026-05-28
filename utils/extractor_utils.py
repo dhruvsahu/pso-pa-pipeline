@@ -1,6 +1,53 @@
 import re
 import os
 
+# ---------------------------------------------------------
+# BRAND → GENERIC NAME MAPPING
+# Used so retrieval works when a payer's QL table, formulary
+# section, or criteria doc lists the generic name instead of
+# the brand (e.g. "Ustekinumab 45 mg" instead of "STELARA").
+# ---------------------------------------------------------
+
+BRAND_TO_GENERIC = {
+    "stelara":    "ustekinumab",
+    "humira":     "adalimumab",
+    "amjevita":   "adalimumab",   # adalimumab biosimilar
+    "hadlima":    "adalimumab",
+    "hyrimoz":    "adalimumab",
+    "cyltezo":    "adalimumab",
+    "cosentyx":   "secukinumab",
+    "taltz":      "ixekizumab",
+    "skyrizi":    "risankizumab",
+    "tremfya":    "guselkumab",
+    "bimzelx":    "bimekizumab",
+    "siliq":      "brodalumab",
+    "ilumya":     "tildrakizumab",
+    "spevigo":    "spesolimab",
+    "sotyktu":    "deucravacitinib",
+    "otezla":     "apremilast",
+    "remicade":   "infliximab",
+    "enbrel":     "etanercept",
+    "cimzia":     "certolizumab",
+    "simponi":    "golimumab",
+    "kevzara":    "sarilumab",
+    "orencia":    "abatacept",
+}
+
+
+def get_brand_aliases(brand):
+    """
+    Return a list of lowercase search terms for `brand`.
+    Always includes the brand itself; adds the generic name
+    when one is known so retrieval works on documents that
+    use generic names in their formulary tables.
+    """
+    brand_lower = brand.lower()
+    aliases = [brand_lower]
+    generic = BRAND_TO_GENERIC.get(brand_lower)
+    if generic:
+        aliases.append(generic)
+    return aliases
+
 
 def clean_json_output(text):
     """
@@ -58,9 +105,11 @@ def collect_wide_fallback(
     return empty.
     """
 
+    aliases = get_brand_aliases(brand)
+
     brand_indices = {
         idx for idx, p in enumerate(pages)
-        if brand.lower() in p["text"].lower()
+        if any(alias in p["text"].lower() for alias in aliases)
     }
 
     if not brand_indices:
