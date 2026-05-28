@@ -65,11 +65,14 @@ class UtilizationManagementExtractor:
 
             "references",
             "appendix",
-            "policy history",
-            "coding",
-            "billing",
-            "hcpcs",
-            "ndc"
+            "policy history"
+
+            # "coding", "billing", "hcpcs", "ndc" intentionally
+            # removed — payer QL tables frequently embed HCPCS/NDC
+            # codes on the same page as the quantity limit table.
+            # Excluding on those terms drops exactly the pages we need.
+            # The QL retrieval keywords are specific enough to filter
+            # noise without these broad exclusions.
         ]
 
     # =====================================================
