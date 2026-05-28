@@ -106,14 +106,8 @@ class StepTherapyExtractor:
     ]
 
     STEP_EXCLUSIONS = [
-        "references",
-        "appendix",
         "policy history",
         "review history",
-        "coding",
-        "billing",
-        "hcpcs",
-        "ndc",
         "table of contents",
     ]
 

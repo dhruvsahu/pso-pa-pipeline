@@ -359,14 +359,14 @@ function cardContent(step, result, meta) {
 
     // ---- AUTHORIZATION ----
     else if (step === 'authorization') {
-        const r = result.reauthorization_required || 'NA';
+        const init = result.initial_authorization_months || 'NA';
+        const r    = result.reauthorization_required     || 'NA';
+        const rd   = result.reauthorization_duration_months || 'NA';
         body = `
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-slate-500 mb-0.5">Reauthorization required</p>
-                    <p class="text-xl font-bold text-white">${r}</p>
-                </div>
-                ${badge(r === 'Yes' ? 'warn' : 'ok', r === 'Yes' ? '⚠ Required' : '✓ Not required')}
+            <div class="grid grid-cols-3 gap-2">
+                ${stat('Initial Auth',  init + (init !== 'NA' && init !== 'Unspecified' ? ' mo' : ''), 'green')}
+                ${stat('Reauth Required', r, r === 'Yes' ? 'amber' : 'green')}
+                ${stat('Reauth Duration', rd + (rd !== 'NA' && rd !== 'Unspecified' ? ' mo' : ''), r === 'Yes' ? 'amber' : 'green')}
             </div>`;
     }
 
@@ -386,28 +386,91 @@ function cardContent(step, result, meta) {
 
     // ---- CLINICAL ACCESS ----
     else if (step === 'clinical_access') {
-        const tb   = result.tb_test_required      || 'NA';
+        const tb   = result.tb_test_required          || 'NA';
         const spec = result.specialist_types;
         const pc   = result.precertification_required || 'NA';
-        const specLabel = Array.isArray(spec) && spec.length > 0
-            ? spec.join(', ') : (spec || 'NA');
         body = `
             <div class="grid grid-cols-3 gap-2">
-                ${stat('TB Test',    tb,        tb === 'Yes'                                          ? 'amber' : 'green')}
+                ${stat('TB Test',    tb,        tb === 'Yes'                                ? 'amber' : 'green')}
                 ${stat('Specialist', Array.isArray(spec) && spec.length > 0 ? spec[0] : (spec || 'NA'),
-                                               Array.isArray(spec) && spec.length > 0                ? 'amber' : 'green')}
-                ${stat('Pre-cert',   pc,        pc === 'Yes'                                          ? 'amber' : 'green')}
+                                               Array.isArray(spec) && spec.length > 0      ? 'amber' : 'green')}
+                ${stat('Pre-cert',   pc,        pc === 'Yes'                                ? 'amber' : 'green')}
             </div>`;
     }
 
-    // Source quote
-    const quotes = result.source_statements || [];
-    const quote  = quotes.length
-        ? `<div class="mt-3 pt-3 border-t border-slate-800">
-               <p class="text-xs text-slate-600 italic leading-relaxed">"${quotes[0]}"</p>
-           </div>` : '';
+    // Read More section
+    const readMore = buildReadMore(step, result);
 
-    return header + body + quote;
+    return header + body + readMore;
+}
+
+// --------------------------------------------------------
+// READ MORE — collapsible reasoning + source statements
+// --------------------------------------------------------
+function buildReadMore(step, result) {
+    const detailId = `detail-${step}`;
+
+    // Collect source statements / requirements per extractor
+    let sources = [];
+    if (step === 'age' && result.source_statement)
+        sources = [result.source_statement];
+    else if (step === 'step_therapy' && result.step_therapy_requirements?.length)
+        sources = result.step_therapy_requirements;
+    else if (step === 'authorization' && result.reauthorization_requirements?.length)
+        sources = result.reauthorization_requirements;
+    else if (result.source_statements?.length)
+        sources = result.source_statements;
+
+    const reasoning = (result.reasoning || '').trim();
+    if (!reasoning && !sources.length) return '';
+
+    const reasoningHtml = reasoning ? `
+        <div class="mb-3">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                Reasoning
+            </p>
+            <p class="text-xs text-slate-400 leading-relaxed">${reasoning}</p>
+        </div>` : '';
+
+    const sourcesHtml = sources.length ? `
+        <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                Policy statements
+            </p>
+            <ul class="space-y-1.5">
+                ${sources.map(s => `
+                    <li class="flex gap-2 text-xs text-slate-400 leading-relaxed">
+                        <span class="text-indigo-500 flex-shrink-0 font-bold mt-0.5">›</span>
+                        <span>${s}</span>
+                    </li>`).join('')}
+            </ul>
+        </div>` : '';
+
+    return `
+        <div class="mt-3 pt-3 border-t border-slate-800/80">
+            <button onclick="toggleReadMore('${detailId}')"
+                    class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-400 transition-colors">
+                <svg id="${detailId}-chevron"
+                     class="w-3 h-3 transition-transform duration-200"
+                     fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span id="${detailId}-label">Read more</span>
+            </button>
+            <div id="${detailId}"
+                 class="hidden mt-3 bg-slate-800/40 border border-slate-700/40 rounded-xl p-3">
+                ${reasoningHtml}${sourcesHtml}
+            </div>
+        </div>`;
+}
+
+function toggleReadMore(id) {
+    const panel   = document.getElementById(id);
+    const chevron = document.getElementById(`${id}-chevron`);
+    const label   = document.getElementById(`${id}-label`);
+    const opening = panel.classList.toggle('hidden');
+    chevron.style.transform = opening ? '' : 'rotate(180deg)';
+    label.textContent = opening ? 'Read more' : 'Read less';
 }
 
 function badge(type, text) {

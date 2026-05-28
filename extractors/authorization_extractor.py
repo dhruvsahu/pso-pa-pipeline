@@ -39,10 +39,6 @@ class AuthorizationExtractor:
 
         self.exclusion_keywords = [
 
-            "references",
-            "coding",
-            "billing",
-            "appendix",
             "policy history",
             "review history",
             "table of contents"

@@ -62,13 +62,9 @@ class ClinicalAccessExtractor:
 
         self.exclusion_keywords = [
 
-            "references",
-            "appendix",
             "policy history",
-            "coding",
-            "billing",
-            "hcpcs",
-            "ndc"
+            "review history",
+            "table of contents"
         ]
 
     # =====================================================
