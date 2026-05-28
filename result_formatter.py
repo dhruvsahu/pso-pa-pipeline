@@ -297,6 +297,24 @@ df = pd.DataFrame(
 )
 
 # =========================================================
+# NORMALISE MIXED-TYPE DURATION COLUMNS
+# initial_authorization_months / reauthorization_duration_months
+# can be int (12), "NA", "Unspecified", or None depending on
+# what the LLM returned.  Coerce everything to string here so
+# the Excel column has a consistent dtype and no "nan" cells.
+# =========================================================
+
+_DURATION_COLS = [
+    "Initial Authorization Duration(in-months)",
+    "Reauthorization Duration(in-months)",
+]
+
+for _col in _DURATION_COLS:
+    df[_col] = df[_col].apply(
+        lambda x: "NA" if x is None else str(int(x)) if isinstance(x, float) else str(x)
+    )
+
+# =========================================================
 # CREATE OUTPUT DIRECTORY
 # =========================================================
 
