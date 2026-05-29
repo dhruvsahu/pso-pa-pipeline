@@ -127,7 +127,7 @@ MODEL_PROVIDER=gemini   # or groq, ollama
 **Status:** Accepted
 
 ### Context
-Gemini Flash Lite free tier: 15 RPM, 500 RPD. At 79 PDFs × 4 LLM calls = ~316 calls total (~156 already used by hackathon day). Hardcoded `time.sleep(20)` between calls was used initially but wasted time when requests were well under the rate limit.
+Gemini Flash Lite free tier: 15 RPM, 500 RPD. At 79 PDFs × 5 LLM calls = ~395 calls total (~156 already used by hackathon day). Hardcoded `time.sleep(20)` between calls was used initially but wasted time when requests were well under the rate limit.
 
 ### Decision
 Replace all hardcoded sleeps with a rolling-window RPM throttler in `ModelRouter._gemini_throttle()`. A `deque` tracks timestamps of the last N requests. Before each Gemini call:
@@ -195,7 +195,7 @@ Scores are clamped to [0, 100]. Categories:
 **Status:** Accepted
 
 ### Context
-Running 79 PDFs × 4 LLM calls ≈ 316 API calls takes ~45–90 minutes. A crash, network timeout, or rate limit error mid-run would lose all progress without a persistence strategy.
+Running 79 PDFs × 5 LLM calls ≈ 395 API calls takes ~45–90 minutes. A crash, network timeout, or rate limit error mid-run would lose all progress without a persistence strategy.
 
 ### Decision
 `run_full_pipeline.py` saves results incrementally:

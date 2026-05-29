@@ -178,7 +178,7 @@ MODEL_PROVIDER=ollama    # local / offline fallback
 - Prompt template: ~7K chars (~1.75K tokens)
 - Context: up to 20K chars (~5K tokens)
 - Total per call: ~6.75K tokens
-- 4 calls per PDF: ~27K tokens/PDF
+- 5 calls per PDF: ~34K tokens/PDF
 - Groq limit: 12K TPM → throttler spaces calls to stay within budget
 
 ---
