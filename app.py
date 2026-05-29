@@ -1,9 +1,9 @@
 import json
 import os
 import tempfile
-import threading
-import time
 import uuid
+import time
+import threading
 
 import csv
 
@@ -27,36 +27,62 @@ from result_formatter import flatten_result, SUBMISSION_COLUMNS
 
 app = Flask(__name__)
 
-# In-memory session store: session_id → (temp_path, created_at)
-# All reads/writes are protected by SESSIONS_LOCK.
-SESSIONS: dict = {}
-SESSIONS_LOCK = threading.Lock()
-
-# Sessions older than this many seconds are swept on the next /upload
-SESSION_TTL_SECONDS = 600  # 10 minutes
-
-# Output CSV path written after every UI analysis
-RESULTS_CSV = "outputs/results.csv"
-
-# Column schema imported from result_formatter — single source of truth
-CSV_COLUMNS = SUBMISSION_COLUMNS
+# In-memory session store: session_id → (temp PDF path, created_at).
+# Guarded by a lock because Flask runs with threaded=True. Entries older
+# than SESSION_TTL_SECONDS are swept on each upload, so an abandoned upload
+# (client never opens /stream) cannot leak its temp file or dict entry.
+SESSIONS = {}
+_SESSIONS_LOCK = threading.Lock()
+SESSION_TTL_SECONDS = 600
 
 
-def _sweep_expired_sessions():
-    """Remove sessions older than SESSION_TTL_SECONDS and unlink their temp files."""
-    cutoff = time.time() - SESSION_TTL_SECONDS
-    with SESSIONS_LOCK:
+def _sweep_sessions():
+    """Pop and delete temp files for sessions older than the TTL."""
+    now = time.time()
+    with _SESSIONS_LOCK:
         expired = [
-            sid for sid, entry in SESSIONS.items()
-            if entry[1] < cutoff
+            sid for sid, (_path, created) in SESSIONS.items()
+            if now - created > SESSION_TTL_SECONDS
         ]
         for sid in expired:
-            entry = SESSIONS.pop(sid)
-            path = entry[0]
+            path, _created = SESSIONS.pop(sid)
             try:
                 os.unlink(path)
             except OSError:
                 pass
+
+
+def _register_session(path):
+    """Store a temp PDF path under a new session id and return the id."""
+    sid = str(uuid.uuid4())
+    with _SESSIONS_LOCK:
+        SESSIONS[sid] = (path, time.time())
+    return sid
+
+
+def _get_session_path(sid):
+    """Return the temp PDF path for a session, or None."""
+    with _SESSIONS_LOCK:
+        entry = SESSIONS.get(sid)
+    return entry[0] if entry else None
+
+
+def _discard_session(sid):
+    """Pop a session and unlink its temp file (idempotent, lock-guarded)."""
+    with _SESSIONS_LOCK:
+        entry = SESSIONS.pop(sid, None)
+    if entry:
+        try:
+            os.unlink(entry[0])
+        except OSError:
+            pass
+
+
+# Output CSV path written after every UI analysis
+RESULTS_CSV = "outputs/results.csv"
+
+# Column schema is owned by result_formatter (single source of truth)
+# so the UI output and the batch output cannot drift apart.
 
 
 def append_to_csv(result_dict):
@@ -65,7 +91,7 @@ def append_to_csv(result_dict):
     write_header = not os.path.exists(RESULTS_CSV)
     row = flatten_result(result_dict)
     with open(RESULTS_CSV, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+        writer = csv.DictWriter(f, fieldnames=SUBMISSION_COLUMNS)
         if write_header:
             writer.writeheader()
         writer.writerow(row)
@@ -92,9 +118,6 @@ def upload():
     stream.
     """
 
-    # Sweep stale sessions before accepting the new upload
-    _sweep_expired_sessions()
-
     pdf = request.files.get("pdf")
 
     if not pdf:
@@ -107,11 +130,10 @@ def upload():
     pdf.save(tmp.name)
     tmp.close()
 
-    original_name = pdf.filename or "uploaded_pdf"
+    # Opportunistically reap abandoned uploads before adding a new one.
+    _sweep_sessions()
 
-    session_id = str(uuid.uuid4())
-    with SESSIONS_LOCK:
-        SESSIONS[session_id] = (tmp.name, time.time(), original_name)
+    session_id = _register_session(tmp.name)
 
     return jsonify({"session_id": session_id})
 
@@ -127,21 +149,15 @@ def stream():
     session_id = request.args.get("session_id", "")
     brand = request.args.get("brand", "")
 
-    with SESSIONS_LOCK:
-        session_entry = SESSIONS.get(session_id)
+    pdf_path = _get_session_path(session_id)
 
-    if not session_entry:
-        return jsonify({"error": "Session not found"}), 404
-
-    pdf_path, _, original_name = session_entry
-
-    if not os.path.exists(pdf_path):
+    if not pdf_path or not os.path.exists(pdf_path):
         return jsonify({"error": "Session not found"}), 404
 
     def generate():
 
         # Accumulate step results to build the combined record
-        collected = {"brand": brand, "filename": original_name}
+        collected = {"brand": brand, "filename": "uploaded_pdf"}
 
         try:
 
@@ -181,13 +197,8 @@ def stream():
 
         finally:
 
-            # Clean up temp file and session under lock
-            with SESSIONS_LOCK:
-                SESSIONS.pop(session_id, None)
-            try:
-                os.unlink(pdf_path)
-            except OSError:
-                pass
+            # Clean up temp file and session (lock-guarded, idempotent)
+            _discard_session(session_id)
 
         yield 'data: {"step": "done"}\n\n'
 
