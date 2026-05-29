@@ -86,7 +86,7 @@ def clean_json_output(text):
     return text.strip()
 
 
-def sort_by_relevance(collected_pages, signal_keywords):
+def sort_by_relevance(collected_pages, signal_keywords, max_pages=15):
     """
     Re-order collected context pages so the most relevant ones
     appear first — before the LLM's 20K-char truncation window
@@ -97,8 +97,13 @@ def sort_by_relevance(collected_pages, signal_keywords):
     to the top; background / FDA-indication table pages sink to
     the bottom and get truncated instead.
 
-    Each extractor passes its own retrieval_keywords list so the
-    scoring is tuned to that extractor's content type.
+    max_pages caps the output so large multi-drug formularies
+    (which can sweep up 60+ pages) don't bury critical pages
+    in noise.  Only the top max_pages by relevance score are
+    returned; the rest are discarded before joining.
+
+    Each extractor passes its own tight signal_keywords list so
+    the scoring is tuned to that extractor's content type.
     """
     def _score(page_text):
         lower = page_text.lower()
@@ -107,11 +112,13 @@ def sort_by_relevance(collected_pages, signal_keywords):
             if kw in lower
         )
 
-    return sorted(
+    sorted_pages = sorted(
         collected_pages,
         key=_score,
         reverse=True
     )
+
+    return sorted_pages[:max_pages]
 
 
 def collect_wide_fallback(

@@ -58,6 +58,31 @@ class ClinicalAccessExtractor:
         )
 
         # -------------------------------------------------
+        # TIGHT SORT SIGNALS
+        # Used only for ranking — these appear on actual
+        # clinical access criteria pages, not general
+        # formulary listing / background pages.
+        # -------------------------------------------------
+
+        self.clinical_sort_signals = [
+            "tuberculosis",
+            "latent tb",
+            "tb test",
+            "tb screening",
+            "quantiferon",
+            "ppd",
+            "prescriber specialties",
+            "must be prescribed by",
+            "prescribed by or in consultation",
+            "dermatologist",
+            "rheumatologist",
+            "plaque psoriasis",
+            "moderate to severe",
+            "approval criteria",
+            "initial approval criteria",
+        ]
+
+        # -------------------------------------------------
         # EXCLUSION KEYWORDS
         # -------------------------------------------------
 
@@ -113,7 +138,7 @@ class ClinicalAccessExtractor:
             )
 
         collected_pages = sort_by_relevance(
-            collected_pages, self.retrieval_keywords
+            collected_pages, self.clinical_sort_signals
         )
 
         return "\n".join(

@@ -133,6 +133,14 @@ class StepTherapyExtractor:
         "non-preferred",
         "initial authorization",
         "prior authorization criteria",
+        # Centene / direct requirement language
+        "failure of",
+        "tried and failed",
+        "must use",
+        "must have tried",
+        "used for",
+        "member meets",
+        "inadequate response to",
     ]
 
     # =====================================================

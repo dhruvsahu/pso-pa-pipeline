@@ -38,6 +38,32 @@ class AuthorizationExtractor:
         ]
 
         # -------------------------------------------------
+        # TIGHT SORT SIGNALS
+        # Used only for ranking collected pages — these
+        # appear on actual authorization criteria pages
+        # but NOT on general policy / formulary listing
+        # pages.  Pages that score high here float to the
+        # top of the 20K context window.
+        # -------------------------------------------------
+
+        self.auth_sort_signals = [
+            "initial authorization",
+            "approval criteria",
+            "initial approval criteria",
+            "approved for",
+            "may be approved",
+            "authorization of",
+            "may be granted",
+            "renewal criteria",
+            "reauthorization criteria",
+            "continued therapy criteria",
+            "plaque psoriasis",
+            "moderate to severe",
+            "12 months",
+            "6 months",
+        ]
+
+        # -------------------------------------------------
         # EXCLUSION KEYWORDS
         # -------------------------------------------------
 
@@ -132,7 +158,7 @@ class AuthorizationExtractor:
             )
 
         collected = sort_by_relevance(
-            collected, self.authorization_keywords
+            collected, self.auth_sort_signals
         )
 
         return "\n".join(collected)
