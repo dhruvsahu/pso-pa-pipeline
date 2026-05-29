@@ -1,7 +1,9 @@
 import json
 import logging
 import pandas as pd
-from utils.model_router import get_router
+from utils.model_router import (
+    get_router
+)
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -17,7 +19,9 @@ class StepTherapyExtractor:
             "assets/therapy_dictionary_normalized.csv"
         )
 
-        self.model_router = get_router()
+        self.model_router = (
+            get_router()
+        )
 
         self.known_therapies = sorted(
 
@@ -276,6 +280,7 @@ class StepTherapyExtractor:
         self,
         pages
     ):
+        print("extracting approval section was used")
         """
         Extract ONLY the approval criteria section
         from the policy document.
@@ -395,6 +400,8 @@ class StepTherapyExtractor:
         brand,
         pdf_name=""
     ):
+        print("main extraction was used")
+
         try:
 
             # -----------------------------------------
@@ -552,9 +559,10 @@ class StepTherapyExtractor:
         except Exception as e:
 
             logging.warning(
-                "[StepTherapyExtractor] extraction failed for brand=%s pdf=%s: %s",
-                brand, pdf_name, e, exc_info=True
+                "Step therapy extraction failed for %s / %s: %s",
+                brand, pdf_name, e
             )
+
             return {
 
                 "parameter_group": (
@@ -577,11 +585,11 @@ class StepTherapyExtractor:
 
                 "reasoning": str(e),
 
+                "extraction_error": True,
+
                 "confidence": 0,
 
-                "retrieved_pages": [],
-
-                "extraction_error": True,
+                "retrieved_pages": []
             }
 
     # =====================================================
@@ -593,6 +601,7 @@ class StepTherapyExtractor:
         brand,
         context
     ):
+        print("extracting step therapy requirements with llm was used")
         context = context[:20000]
 
         prompt = f"""
@@ -774,6 +783,12 @@ class StepTherapyExtractor:
         - Do NOT hallucinate therapies — use ONLY evidence from the provided context
         - Preserve exact policy wording inside alternatives lists
 """
+        model = self.model_router.select_model(
+            context
+        )
+
+        print(f"[MODEL SELECTED] {model}")
+
         response = self.model_router.generate(
 
             prompt=prompt,
