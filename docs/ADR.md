@@ -4,7 +4,7 @@
 **Project:** PsO ADS Track — Hackathon  
 **Date:** 2026-05-29  
 **Status:** Accepted  
-**Authors:** Dhruv, Claude
+**Authors:** Dhruv
 
 ---
 
@@ -127,7 +127,7 @@ MODEL_PROVIDER=gemini   # or groq, ollama
 **Status:** Accepted
 
 ### Context
-Gemini Flash Lite free tier: 15 RPM, 500 RPD. At 79 PDFs × 5 LLM calls = ~395 calls total (~156 already used by hackathon day). Hardcoded `time.sleep(20)` between calls was used initially but wasted time when requests were well under the rate limit.
+Gemini Flash Lite free tier: 15 RPM, 500 RPD. At 79 PDFs × 5 LLM calls = ~395 calls total. Hardcoded `time.sleep(20)` between calls was used initially but wasted time when requests were well under the rate limit.
 
 ### Decision
 Replace all hardcoded sleeps with a rolling-window RPM throttler in `ModelRouter._gemini_throttle()`. A `deque` tracks timestamps of the last N requests. Before each Gemini call:
