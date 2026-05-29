@@ -276,7 +276,6 @@ class StepTherapyExtractor:
         self,
         pages
     ):
-        print("extracting approval section was used")
         """
         Extract ONLY the approval criteria section
         from the policy document.
@@ -396,8 +395,6 @@ class StepTherapyExtractor:
         brand,
         pdf_name=""
     ):
-        print("main extraction was used")
-
         try:
 
             # -----------------------------------------
@@ -596,7 +593,6 @@ class StepTherapyExtractor:
         brand,
         context
     ):
-        print("extracting step therapy requirements with llm was used")
         context = context[:20000]
 
         prompt = f"""
