@@ -29,16 +29,17 @@ pip install -r requirements.txt
 
 # Set up your API key
 cp .env.example .env
+# Then open .env and replace the placeholder with your actual key
 ```
 
-Open `.env` and add your key:
+The pipeline auto-selects the backend — add **one** key:
 
-```
-# Pick one:
-GEMINI_API_KEY=your_key_here
-# or
-GROQ_API_KEY=your_key_here
-```
+| Key | Provider | Notes |
+|-----|----------|-------|
+| `GROQ_API_KEY` | Groq — llama-3.3-70b | Recommended for presentation |
+| `GEMINI_API_KEY` | Gemini Flash Lite | Free tier: 15 RPM, 500 RPD |
+
+No key at all → falls back to local **Ollama** (must have Ollama running).
 
 ---
 
