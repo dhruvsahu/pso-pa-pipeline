@@ -1,5 +1,3 @@
-import threading
-import uuid
 from collections import deque
 from ollama import chat
 
@@ -12,6 +10,31 @@ from dotenv import load_dotenv
 
 import os
 import time
+import threading
+
+
+# =====================================================
+# PROCESS-WIDE SINGLETON
+# The rolling-window throttlers are only meaningful if ONE
+# router instance is shared by all extractors in a process
+# (ADR-005). Each extractor previously built its own
+# ModelRouter(), giving N independent windows and an
+# effective rate ~N× the configured target. get_router()
+# guarantees a single shared instance (double-checked lock).
+# =====================================================
+
+_ROUTER_SINGLETON = None
+_ROUTER_SINGLETON_LOCK = threading.Lock()
+
+
+def get_router():
+    """Return the process-wide shared ModelRouter, creating it once."""
+    global _ROUTER_SINGLETON
+    if _ROUTER_SINGLETON is None:
+        with _ROUTER_SINGLETON_LOCK:
+            if _ROUTER_SINGLETON is None:
+                _ROUTER_SINGLETON = ModelRouter()
+    return _ROUTER_SINGLETON
 
 
 class ModelRouter:
@@ -32,6 +55,13 @@ class ModelRouter:
 
         load_dotenv()
 
+        # Serializes all throttle-window read-modify-write so concurrent
+        # threads (Flask threaded=True) cannot both observe headroom and
+        # overshoot the rate target, or corrupt the window during the
+        # Groq estimate→actual replacement.
+        self._throttle_lock = threading.Lock()
+        self._groq_uid = 0
+
         # =============================================
         # AUTO-DETECT PROVIDER FROM ENV
         # Priority: GROQ_API_KEY → GEMINI_API_KEY → ollama
@@ -51,15 +81,11 @@ class ModelRouter:
 
         print(f"[MODEL ROUTER] Provider: {self.provider}")
 
-        # Single lock protecting ALL throttle windows in this instance
-        self._throttle_lock = threading.Lock()
-
         # =============================================
         # GROQ SETUP
         # Model: llama-3.3-70b-versatile (12K TPM)
-        # Token-aware throttle: list of
-        # (timestamp, tokens, call_id) over the last 60s.
-        # List (not deque) so entries can be replaced by call_id.
+        # Token-aware throttle: rolling deque of
+        # (timestamp, tokens) over the last 60s.
         # =============================================
 
         if self.provider == "groq":
@@ -70,8 +96,10 @@ class ModelRouter:
 
             self.groq_model = "llama-3.3-70b-versatile"
 
-            # Each entry: (unix_timestamp, token_count, call_id)
-            self._groq_token_window = []
+            # Each entry: (unix_timestamp, token_count, uid)
+            # uid lets the post-call update replace exactly this call's
+            # estimate with its actual usage, even under concurrency.
+            self._groq_token_window = deque()
 
         # =============================================
         # GEMINI SETUP
@@ -97,67 +125,89 @@ class ModelRouter:
     # GROQ TOKEN-AWARE THROTTLE
     # Tracks tokens used in the last 60s and sleeps
     # only as long as needed to stay under GROQ_TPM_TARGET.
-    # Returns a call_id used to replace the estimate with
-    # actual usage after the response arrives.
-    # Lock is held only during read-modify-write; released
-    # while sleeping so other threads can make progress.
+    # Gemini path uses its own RPM throttle below.
     # =================================================
 
     def _groq_throttle(self, tokens_about_to_use):
         """
         Call BEFORE each Groq API request.
-        Evicts entries older than 60s, checks headroom, sleeps
-        if needed, then records the call.
-        Returns a call_id for the matching _groq_update_actual call.
+        Evicts entries older than 60s, then checks if
+        adding `tokens_about_to_use` would exceed the
+        TPM target.  Sleeps the minimum required time
+        if it would, then records the call.
+
+        Returns a unique id (uid) identifying the window entry
+        recorded for this call, so the caller can later replace
+        the estimate with the actual token usage.
+
+        The window read-modify-write runs under self._throttle_lock;
+        the lock is RELEASED while sleeping so other threads can
+        make progress / age out entries.
         """
-        call_id = str(uuid.uuid4())
+
+        window = self._groq_token_window
 
         while True:
+
             with self._throttle_lock:
+
                 now = time.time()
 
-                # Evict entries outside the 60s window
-                self._groq_token_window = [
-                    e for e in self._groq_token_window
-                    if now - e[0] < 60
-                ]
+                # Drop entries outside the 60s window
+                while (
+                    window
+                    and now - window[0][0] >= 60
+                ):
+                    window.popleft()
 
                 tokens_in_window = sum(
-                    e[1] for e in self._groq_token_window
+                    t for _, t, _ in window
                 )
-                headroom = self.GROQ_TPM_TARGET - tokens_in_window
+
+                headroom = (
+                    self.GROQ_TPM_TARGET
+                    - tokens_in_window
+                )
 
                 if tokens_about_to_use <= headroom:
-                    # Safe to proceed — record with call_id
-                    self._groq_token_window.append(
-                        (now, tokens_about_to_use, call_id)
+                    # Safe to proceed — record with a unique id
+                    self._groq_uid += 1
+                    uid = self._groq_uid
+                    window.append(
+                        (now, tokens_about_to_use, uid)
                     )
-                    return call_id
+                    return uid
 
-                # Need to sleep — calculate minimum wait
-                oldest_ts = self._groq_token_window[0][0]
-                sleep_needed = oldest_ts + 60 - now + 0.5
+                # Not enough headroom — calculate minimum
+                # sleep to free up space as old entries age out
+                oldest_ts = window[0][0]
+                sleep_needed = (
+                    oldest_ts + 60 - now + 0.5
+                )
 
-            # Sleep OUTSIDE the lock so other threads aren't blocked
-            print(
-                f"[GROQ THROTTLE] "
-                f"{tokens_in_window} tokens used in last 60s "
-                f"(target {self.GROQ_TPM_TARGET}) — "
-                f"waiting {sleep_needed:.1f}s"
-            )
+                print(
+                    f"[GROQ THROTTLE] "
+                    f"{tokens_in_window} tokens used "
+                    f"in last 60s "
+                    f"(target {self.GROQ_TPM_TARGET}) — "
+                    f"waiting {sleep_needed:.1f}s"
+                )
+
+            # Released the lock before sleeping
             time.sleep(max(sleep_needed, 1))
 
-    def _groq_update_actual(self, call_id, actual_tokens):
+    def _groq_record_actual(self, uid, actual_tokens):
         """
-        Replace the estimated token count for `call_id` with the
-        actual usage returned by the API.  Identified by call_id,
-        not by position or value, so concurrent calls never collide.
+        Replace the estimate recorded under `uid` with the actual token
+        usage, identifying the entry by uid (never by position or by
+        matching the estimate value) so concurrent calls cannot corrupt
+        each other's accounting.
         """
         with self._throttle_lock:
-            now = time.time()
-            for i, entry in enumerate(self._groq_token_window):
-                if entry[2] == call_id:
-                    self._groq_token_window[i] = (now, actual_tokens, call_id)
+            window = self._groq_token_window
+            for i, (ts, _tok, u) in enumerate(window):
+                if u == uid:
+                    window[i] = (ts, actual_tokens, u)
                     return
 
     # =================================================
@@ -165,8 +215,7 @@ class ModelRouter:
     # Tracks request timestamps in the last 60s and
     # sleeps only as long as needed to stay under
     # GEMINI_RPM_TARGET before each API call.
-    # Lock held only during read-modify-write; released
-    # while sleeping.
+    # Replaces the hardcoded sleep in the pipeline.
     # =================================================
 
     def _gemini_throttle(self):
@@ -176,14 +225,20 @@ class ModelRouter:
         if the rolling count would exceed RPM_TARGET.
         Records the timestamp after proceeding.
         """
+
         window = self._gemini_rpm_window
 
         while True:
+
             with self._throttle_lock:
+
                 now = time.time()
 
-                # Evict entries outside the 60s window
-                while window and now - window[0] >= 60:
+                # Drop entries outside the 60s window
+                while (
+                    window
+                    and now - window[0] >= 60
+                ):
                     window.popleft()
 
                 if len(window) < self.GEMINI_RPM_TARGET:
@@ -191,18 +246,37 @@ class ModelRouter:
                     window.append(now)
                     return
 
-                # Too many requests — calculate minimum wait
+                # Too many requests in the last 60s —
+                # sleep until the oldest one ages out
                 oldest = window[0]
                 sleep_needed = oldest + 60 - now + 0.5
 
-            # Sleep OUTSIDE the lock
-            print(
-                f"[GEMINI THROTTLE] "
-                f"{len(window)} requests in last 60s "
-                f"(target {self.GEMINI_RPM_TARGET} RPM) — "
-                f"waiting {sleep_needed:.1f}s"
-            )
+                print(
+                    f"[GEMINI THROTTLE] "
+                    f"{len(window)} requests in last 60s "
+                    f"(target {self.GEMINI_RPM_TARGET} RPM) — "
+                    f"waiting {sleep_needed:.1f}s"
+                )
+
+            # Released the lock before sleeping
             time.sleep(max(sleep_needed, 1))
+
+    # =================================================
+    # MODEL SELECTION
+    # =================================================
+
+    def select_model(
+        self,
+        context
+    ):
+
+        context_length = len(context)
+
+        if context_length > 12000:
+
+            return "qwen2.5:7b"
+
+        return "qwen2.5:7b"
 
     # =================================================
     # GENERATE
@@ -227,7 +301,7 @@ class ModelRouter:
             # (~4 chars per token is a safe approximation)
             estimated_tokens = len(prompt) // 4 + 300
 
-            call_id = self._groq_throttle(estimated_tokens)
+            groq_uid = self._groq_throttle(estimated_tokens)
 
             print(
                 f"[LLM] Using Groq: {self.groq_model}"
@@ -253,10 +327,13 @@ class ModelRouter:
                         )
                     )
 
-                    # Replace the estimate with actual usage
-                    # identified by call_id — safe under threads
-                    actual_tokens = response.usage.total_tokens
-                    self._groq_update_actual(call_id, actual_tokens)
+                    # Replace this call's estimate with the actual
+                    # usage (identified by uid, lock-guarded) so the
+                    # window stays accurate and concurrency-safe.
+                    actual_tokens = (
+                        response.usage.total_tokens
+                    )
+                    self._groq_record_actual(groq_uid, actual_tokens)
 
                     print(
                         f"[GROQ TOKENS] {actual_tokens} "
@@ -343,8 +420,9 @@ class ModelRouter:
 
         else:
 
-            # qwen2.5:7b for all context lengths
-            model = "qwen2.5:7b"
+            model = self.select_model(
+                context
+            )
 
             print(
                 f"[LLM] Using Ollama: {model}"
@@ -363,27 +441,3 @@ class ModelRouter:
             )
 
             return response.message.content
-
-
-# =================================================
-# PROCESS-WIDE SINGLETON ACCESSOR
-# All extractors call get_router() instead of
-# ModelRouter() so there is exactly one throttle
-# window per process regardless of how many
-# extractor instances are created.
-# Double-checked locking is safe here because
-# _INSTANCE is only ever set once (None → instance).
-# =================================================
-
-_INSTANCE: "ModelRouter | None" = None
-_INSTANCE_LOCK = threading.Lock()
-
-
-def get_router() -> ModelRouter:
-    """Return the process-wide shared ModelRouter instance."""
-    global _INSTANCE
-    if _INSTANCE is None:
-        with _INSTANCE_LOCK:
-            if _INSTANCE is None:
-                _INSTANCE = ModelRouter()
-    return _INSTANCE
