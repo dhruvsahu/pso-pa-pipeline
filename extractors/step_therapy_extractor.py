@@ -778,12 +778,6 @@ class StepTherapyExtractor:
         - Do NOT hallucinate therapies — use ONLY evidence from the provided context
         - Preserve exact policy wording inside alternatives lists
 """
-        model = self.model_router.select_model(
-            context
-        )
-
-        print(f"[MODEL SELECTED] {model}")
-
         response = self.model_router.generate(
 
             prompt=prompt,

@@ -438,12 +438,6 @@ Duration fields (initial_authorization_months, reauthorization_duration_months) 
 Use "Unspecified" (NOT "NA") when an authorization or approval section for this brand
 exists in the context but does not specify a number of months.
 """
-        model = self.model_router.select_model(
-            context
-        )
-
-        print(f"[MODEL SELECTED] {model}")
-
         response = self.model_router.generate(
 
             prompt=prompt,

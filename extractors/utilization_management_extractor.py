@@ -344,12 +344,6 @@ quantity_limits must be EXACTLY ONE OF:
 - "No"
 - "NA"
 """
-        model = self.model_router.select_model(
-            context
-        )
-
-        print(f"[MODEL SELECTED] {model}")
-
         response = self.model_router.generate(
 
             prompt=prompt,
