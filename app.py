@@ -3,17 +3,21 @@ import os
 import tempfile
 import uuid
 
+import csv
+
 from flask import (
     Flask,
     render_template,
     request,
     Response,
     stream_with_context,
-    jsonify
+    jsonify,
+    send_file,
 )
 
 from access_quality_scorer import AccessQualityScorer
 from pipeline_runner import run_pipeline
+from result_formatter import flatten_result
 
 # =========================================================
 # FLASK APP
@@ -23,6 +27,31 @@ app = Flask(__name__)
 
 # In-memory session store: session_id → temp PDF path
 SESSIONS = {}
+
+# Output CSV path written after every UI analysis
+RESULTS_CSV = "outputs/results.csv"
+
+CSV_COLUMNS = [
+    "Filename", "Brand", "Age",
+    "Step Therapy Requirements Documented in Policy",
+    "Number of Steps through Brands", "Number of Steps through Generic",
+    "Step through Phototherapy", "TB Test required", "Specialist Types",
+    "Quantity Limits", "Initial Authorization Duration(in-months)",
+    "Reauthorization Duration(in-months)", "Reauthorization Required",
+    "Reauthorization Requirements Documented in Policy", "Access Score",
+]
+
+
+def append_to_csv(result_dict):
+    """Append one flattened result row to outputs/results.csv."""
+    os.makedirs("outputs", exist_ok=True)
+    write_header = not os.path.exists(RESULTS_CSV)
+    row = flatten_result(result_dict)
+    with open(RESULTS_CSV, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
 
 # Brand list (for dropdown) — loaded once at startup
 _scorer = AccessQualityScorer()
@@ -82,6 +111,9 @@ def stream():
 
     def generate():
 
+        # Accumulate step results to build the combined record
+        collected = {"brand": brand, "filename": "uploaded_pdf"}
+
         try:
 
             for step, result in run_pipeline(pdf_path, brand):
@@ -92,6 +124,24 @@ def stream():
                 )
 
                 yield f"data: {payload}\n\n"
+
+                # Map pipeline step names to result keys
+                key_map = {
+                    "age":            "age",
+                    "step_therapy":   "step_therapy",
+                    "authorization":  "authorization",
+                    "utilization":    "utilization_management",
+                    "clinical_access":"clinical_access",
+                    "score":          "access_quality",
+                }
+                if step in key_map:
+                    collected[key_map[step]] = result
+
+            # All steps done — save row to CSV
+            try:
+                append_to_csv(collected)
+            except Exception as csv_err:
+                print(f"[CSV SAVE ERROR] {csv_err}")
 
         except Exception as e:
 
@@ -120,6 +170,19 @@ def stream():
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive"
         }
+    )
+
+
+@app.route("/download/results")
+def download_results():
+    """Serve outputs/results.csv as a file download."""
+    if not os.path.exists(RESULTS_CSV):
+        return jsonify({"error": "No results yet — run an analysis first."}), 404
+    return send_file(
+        os.path.abspath(RESULTS_CSV),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="results.csv",
     )
 
 
