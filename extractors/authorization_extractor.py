@@ -58,6 +58,19 @@ class AuthorizationExtractor:
     # fallback — same pattern as other extractors.
     # =====================================================
 
+    # Narrow keyword set used ONLY for the renewal sweep.
+    # These terms are specific to continuation/renewal pages
+    # and won't appear on initial-criteria pages.
+    RENEWAL_KEYWORDS = [
+        "renewal",
+        "reauthorization",
+        "continuation",
+        "continued therapy",
+        "continued use",
+        "renewal criteria",
+        "re-authorization",
+    ]
+
     def extract_authorization_context(
         self,
         pages,
@@ -78,6 +91,37 @@ class AuthorizationExtractor:
             if key not in seen:
                 seen.add(key)
                 collected.append(page_text)
+
+        # -------------------------------------------------
+        # RENEWAL SWEEP — targeted third pass
+        # Check whether any collected page mentions BOTH the
+        # brand AND a renewal keyword.  Noise pages from other
+        # drugs may contain "renewal" but won't mention the
+        # brand, so this check is brand-aware.
+        # -------------------------------------------------
+        brand_aliases = get_brand_aliases(brand)
+
+        def _page_has_brand_renewal(page_text):
+            lower = page_text.lower()
+            return (
+                any(a in lower for a in brand_aliases)
+                and any(kw in lower for kw in self.RENEWAL_KEYWORDS)
+            )
+
+        has_renewal = any(
+            _page_has_brand_renewal(p) for p in collected
+        )
+
+        if not has_renewal:
+            renewal_pages = self._collect_renewal_sweep(
+                pages, brand
+            )
+            for page_text in renewal_pages:
+                m = _re.search(r"PAGE (\d+)", page_text)
+                key = m.group(1) if m else page_text.strip()[:60]
+                if key not in seen:
+                    seen.add(key)
+                    collected.append(page_text)
 
         if not collected:
             collected = collect_wide_fallback(
@@ -138,7 +182,7 @@ class AuthorizationExtractor:
     # =====================================================
 
     def _collect_proximity(
-        self, pages, brand, window=2
+        self, pages, brand, window=4
     ):
 
         aliases = get_brand_aliases(brand)
@@ -188,6 +232,62 @@ class AuthorizationExtractor:
                     f"\n\n===== PAGE "
                     f"{page['page_number']} "
                     f"[proximity] =====\n\n"
+                    + text
+                )
+
+        return collected
+
+    # =====================================================
+    # PASS 3 — RENEWAL SWEEP
+    # Wider ±8 window, renewal-specific keywords only.
+    # Only called when normal collection found no renewal
+    # content — avoids adding noise on normal runs.
+    # =====================================================
+
+    def _collect_renewal_sweep(
+        self, pages, brand, window=8
+    ):
+
+        aliases = get_brand_aliases(brand)
+
+        brand_indices = {
+            idx for idx, p in enumerate(pages)
+            if any(alias in p["text"].lower() for alias in aliases)
+        }
+
+        collected = []
+        seen = set()
+
+        for idx, page in enumerate(pages):
+
+            text = page["text"]
+            lower_text = text.lower()
+
+            if any(
+                ex in lower_text
+                for ex in self.exclusion_keywords
+            ):
+                continue
+
+            renewal_match = any(
+                kw in lower_text
+                for kw in self.RENEWAL_KEYWORDS
+            )
+
+            if not renewal_match:
+                continue
+
+            near_brand = any(
+                abs(idx - b) <= window
+                for b in brand_indices
+            )
+
+            if near_brand and page["page_number"] not in seen:
+                seen.add(page["page_number"])
+                collected.append(
+                    f"\n\n===== PAGE "
+                    f"{page['page_number']} "
+                    f"[renewal-sweep] =====\n\n"
                     + text
                 )
 
