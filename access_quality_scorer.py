@@ -1,8 +1,12 @@
 import json
 import pandas as pd
 
-# Increment this when scoring weights or logic changes so stale checkpoint
-# rows can be identified and re-scored.
+
+# Version of the scoring model. Stamped onto every access_quality result so
+# rows produced by an older scorer (e.g. the legacy flat-list breakdown that
+# scored a STELARA row at 70) are identifiable and can be re-scored. Bump this
+# whenever the scoring logic or weights change.
+# 1.0 = current deduction-only model, 50 = FDA parity (P0-5 re-anchor deferred).
 SCORER_VERSION = "1.0"
 
 
