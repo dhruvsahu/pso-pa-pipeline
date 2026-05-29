@@ -21,30 +21,79 @@ For each `(PDF, brand)` pair:
 
 ## Quickstart
 
+### Step 1 — Install & configure
+
 ```bash
-# 1. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. Set up environment
+# Set up your API key
 cp .env.example .env
-# Add your API key: GEMINI_API_KEY or GROQ_API_KEY
+```
 
-# 3. Place PDFs in
+Open `.env` and add your key:
+
+```
+# Pick one:
+GEMINI_API_KEY=your_key_here
+# or
+GROQ_API_KEY=your_key_here
+```
+
+---
+
+### Step 2 — Interactive UI (single PDF)
+
+The fastest way to try the pipeline. Drag in any PA policy PDF, pick a brand, and watch results stream in live as each extractor finishes.
+
+```bash
+python app.py
+```
+
+Then open **http://localhost:5000** in your browser.
+
+1. **Drag & drop** a PA policy PDF onto the upload area
+2. **Select a brand** from the dropdown (e.g. STELARA, TREMFYA, SKYRIZI)
+3. Click **Analyse** — results stream in real time, one extractor at a time:
+   - Age restriction
+   - Step therapy requirements
+   - Authorization duration
+   - Quantity limits
+   - TB test / specialist / precertification
+   - Access quality score + category
+
+No PDF is stored — the file is processed in memory and discarded after the run.
+
+---
+
+### Step 3 — Bulk batch run (79 PDFs)
+
+For processing the full dataset. Results are saved incrementally — if the run is interrupted, it resumes automatically from the last completed entry.
+
+```bash
+# Place PDFs in the input folder
 Sample_PsO_ADS_Track/
 
-# 4. Run the pipeline (resumes from checkpoint automatically)
+# Run the full batch (skips already-completed entries)
 python run_full_pipeline.py
 
-# 5. Format results to CSV / Excel
+# Format results to CSV + Excel once complete
 python result_formatter.py
 ```
+
+Outputs written to `outputs/`:
+- `final_access_results.json` — full nested results (checkpoint file)
+- `final_access_results.csv` — flat table, one row per (payer, brand)
+- `final_access_results.xlsx` — same as CSV, Excel format
 
 ---
 
 ## Project Structure
 
 ```
-├── run_full_pipeline.py          # Main orchestrator — batch run with checkpointing
+├── app.py                        # Flask web UI — drag PDF, select brand, stream results live
+├── pipeline_runner.py            # SSE generator — powers the web UI's live stream
+├── run_full_pipeline.py          # Bulk batch runner — processes all 79 PDFs with checkpointing
 ├── result_formatter.py           # Flatten JSON → CSV + Excel
 ├── access_quality_scorer.py      # FDA-parity scoring logic
 │
