@@ -37,7 +37,7 @@ The pipeline auto-selects the backend — add **one** key:
 | Key | Provider | Notes |
 |-----|----------|-------|
 | `GROQ_API_KEY` | Groq — llama-3.3-70b | Recommended for presentation |
-| `GEMINI_API_KEY` | Gemini Flash Lite | Free tier: 15 RPM, 500 RPD |
+| `GEMINI_API_KEY` | Gemini 3.1 Flash Lite | Free tier: 15 RPM, 500 RPD |
 
 No key at all → falls back to local **Ollama** (must have Ollama running).
 
@@ -178,7 +178,7 @@ Configured via `.env`. Zero code changes required to switch:
 
 | Provider | Use case | Key |
 |----------|----------|-----|
-| `gemini` | Development (Gemini Flash Lite, 15 RPM) | `GEMINI_API_KEY` |
+| `gemini` | Development (Gemini 3.1 Flash Lite, 15 RPM) | `GEMINI_API_KEY` |
 | `groq` | Presentation (llama-3.3-70b, 12K TPM) | `GROQ_API_KEY` |
 | `ollama` | Local / offline fallback | — |
 
