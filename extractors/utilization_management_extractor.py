@@ -59,6 +59,30 @@ class UtilizationManagementExtractor:
         ]
 
         # -------------------------------------------------
+        # TIGHT SORT SIGNALS
+        # Used only for ranking — these appear on actual
+        # quantity limit / utilization criteria pages,
+        # not on general formulary listing pages.
+        # -------------------------------------------------
+
+        self.util_sort_signals = [
+            "quantity limit",
+            "quantity limits",
+            "quantity level limit",
+            "quantity restriction",
+            "ql",
+            "days supply",
+            "max units",
+            "maximum units",
+            "maximum quantity",
+            "dispensing limit",
+            "per 28 days",
+            "per 56 days",
+            "per 84 days",
+            "plaque psoriasis",
+        ]
+
+        # -------------------------------------------------
         # EXCLUSION KEYWORDS
         # -------------------------------------------------
 
@@ -110,7 +134,7 @@ class UtilizationManagementExtractor:
             )
 
         collected_pages = sort_by_relevance(
-            collected_pages, self.retrieval_keywords
+            collected_pages, self.util_sort_signals
         )
 
         return "\n".join(
