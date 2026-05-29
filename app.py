@@ -47,11 +47,12 @@ def _sweep_expired_sessions():
     cutoff = time.time() - SESSION_TTL_SECONDS
     with SESSIONS_LOCK:
         expired = [
-            sid for sid, (path, created_at) in SESSIONS.items()
-            if created_at < cutoff
+            sid for sid, entry in SESSIONS.items()
+            if entry[1] < cutoff
         ]
         for sid in expired:
-            path, _ = SESSIONS.pop(sid)
+            entry = SESSIONS.pop(sid)
+            path = entry[0]
             try:
                 os.unlink(path)
             except OSError:
@@ -106,9 +107,11 @@ def upload():
     pdf.save(tmp.name)
     tmp.close()
 
+    original_name = pdf.filename or "uploaded_pdf"
+
     session_id = str(uuid.uuid4())
     with SESSIONS_LOCK:
-        SESSIONS[session_id] = (tmp.name, time.time())
+        SESSIONS[session_id] = (tmp.name, time.time(), original_name)
 
     return jsonify({"session_id": session_id})
 
@@ -130,7 +133,7 @@ def stream():
     if not session_entry:
         return jsonify({"error": "Session not found"}), 404
 
-    pdf_path, _ = session_entry
+    pdf_path, _, original_name = session_entry
 
     if not os.path.exists(pdf_path):
         return jsonify({"error": "Session not found"}), 404
@@ -138,7 +141,7 @@ def stream():
     def generate():
 
         # Accumulate step results to build the combined record
-        collected = {"brand": brand, "filename": "uploaded_pdf"}
+        collected = {"brand": brand, "filename": original_name}
 
         try:
 
