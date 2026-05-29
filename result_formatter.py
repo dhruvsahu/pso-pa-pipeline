@@ -4,32 +4,39 @@ import os
 
 
 # =========================================================
-# HELPERS
+# VALUE HELPER
 # =========================================================
 
 def join_or_na(value, sep="; "):
     """
-    Join a list with `sep`, or return the scalar/None value.
-    Always returns "NA" for an empty list or falsy scalar —
-    never returns an empty string.
+    Render a free-text parameter value for the CSV.
+
+    - list  -> join with `sep`, but an EMPTY list becomes "NA"
+               (NOT "" — an empty join would otherwise leave the cell blank,
+               violating the "all parameters populated" deliverable rule).
+    - other -> the value itself, or "NA" if falsy.
     """
     if isinstance(value, list):
         return sep.join(value) if value else "NA"
     return value or "NA"
 
 
-# Known internal sentinels that must never appear in graded cells.
+# Internal extractor sentinels / empties that must never reach a graded
+# cell. They are mapped to the standard missing-value token "NA".
 _SENTINELS = {"NO BRAND MATCH FOUND", "", None}
 
 
 def clean_cell(value):
-    """Map any known internal sentinel to 'NA'; pass all other values through."""
+    """Map known internal sentinels / blanks to 'NA'; pass values through."""
     return "NA" if value in _SENTINELS else value
 
 
 # =========================================================
-# SUBMISSION COLUMN ORDER — single source of truth
-# Names and order must match the Submissions-tab header exactly.
+# SUBMISSION SCHEMA — single source of truth
+# Column names AND order must match the PA_Business_Rules.xlsx
+# "Submissions" tab exactly (hyphenated "Step through-Phototherapy";
+# "Quantity Limits" before "Specialist Types"). Both the batch
+# formatter and the Flask UI import this list so they cannot drift.
 # =========================================================
 
 SUBMISSION_COLUMNS = [
@@ -67,10 +74,10 @@ def flatten_result(result):
     init_auth = result.get("authorization", {}).get("initial_authorization_months")
     reauth_dur = result.get("authorization", {}).get("reauthorization_duration_months")
 
-    return {
+    row = {
         "Filename": result.get("filename"),
         "Brand": result.get("brand"),
-        "Age": clean_cell(result.get("age", {}).get("value")),
+        "Age": result.get("age", {}).get("value"),
         "Step Therapy Requirements Documented in Policy":
             join_or_na(st_reqs),
         "Number of Steps through Brands":
@@ -97,31 +104,58 @@ def flatten_result(result):
             result.get("access_quality", {}).get("access_quality_score"),
     }
 
+    # Defensive: never emit an internal sentinel or blank in a graded cell.
+    return {key: clean_cell(value) for key, value in row.items()}
+
 
 # =========================================================
-# BATCH FORMATTER — only runs when executed directly
+# BATCH ENTRY POINT
+# Guarded under main() so importing flatten_result / join_or_na
+# (e.g. from app.py or the re-score routine) has no side effects.
 # =========================================================
 
 def main():
-    # ----- Load results -----
-    with open("outputs/final_access_results.json", "r", encoding="utf-8") as f:
+
+    # -----------------------------------------------------
+    # LOAD RESULTS
+    # -----------------------------------------------------
+
+    with open(
+        "outputs/final_access_results.json",
+        "r",
+        encoding="utf-8"
+    ) as f:
         results = json.load(f)
 
-    # ----- Flatten -----
-    rows = [flatten_result(r) for r in results]
+    # -----------------------------------------------------
+    # FLATTEN RESULTS
+    # -----------------------------------------------------
 
-    # ----- Build DataFrame reindexed to submission column order -----
-    df = pd.DataFrame(rows)[SUBMISSION_COLUMNS]
+    rows = [flatten_result(result) for result in results]
 
-    # ----- Write outputs -----
+    # Force exact column names + order to match the Submissions tab.
+    df = pd.DataFrame(rows, columns=SUBMISSION_COLUMNS)
+
+    # -----------------------------------------------------
+    # SAVE CSV + EXCEL
+    # -----------------------------------------------------
+
     os.makedirs("outputs", exist_ok=True)
 
-    df.to_csv("outputs/final_access_results.csv", index=False)
-    df.to_excel("outputs/final_access_results.xlsx", index=False)
+    df.to_csv(
+        "outputs/final_access_results.csv",
+        index=False
+    )
+
+    df.to_excel(
+        "outputs/final_access_results.xlsx",
+        index=False
+    )
 
     print("\n" + "=" * 80)
     print("RESULT FORMATTING COMPLETE")
     print("=" * 80)
+
     print(df.head())
 
 
