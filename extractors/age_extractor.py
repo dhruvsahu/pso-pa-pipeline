@@ -1,8 +1,7 @@
 import re
 import json
-from utils.model_router import (
-    ModelRouter
-)
+import logging
+from utils.model_router import get_router
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -76,9 +75,7 @@ class AgeExtractor:
             "FDA-approved indication"
         ]
 
-        self.model_router = (
-            ModelRouter()
-        )
+        self.model_router = get_router()
 
     # =====================================================
     # PAGE SCORING
@@ -340,7 +337,7 @@ Where:
                 return {
                     "parameter": "Age",
                     "brand": brand,
-                    "value": "NO BRAND MATCH FOUND",
+                    "value": "NA",
                     "source_statement": None,
                     "reasoning": (
                         "Brand not found "
@@ -420,6 +417,10 @@ Where:
 
         except Exception as e:
 
+            logging.warning(
+                "[AgeExtractor] extraction failed for brand=%s pdf=%s: %s",
+                brand, pdf_name, e, exc_info=True
+            )
             return {
                 "parameter": "Age",
                 "brand": brand,
@@ -427,7 +428,8 @@ Where:
                 "source_statement": None,
                 "reasoning": str(e),
                 "confidence": 0,
-                "retrieved_pages": []
+                "retrieved_pages": [],
+                "extraction_error": True,
             }
 
 

@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 import pandas as pd
 import os
@@ -239,6 +240,29 @@ def main():
                 "clinical_access": clinical_access_result,
                 "access_quality": access_score_result
             }
+
+            # Skip checkpointing if any extractor flagged an error —
+            # the row will be retried on the next run.
+            sub_keys = [
+                "age", "step_therapy", "authorization",
+                "utilization_management", "clinical_access",
+            ]
+            has_error = any(
+                final_result.get(k, {}).get("extraction_error")
+                for k in sub_keys
+            )
+            if has_error:
+                logging.warning(
+                    "[BATCH] Skipping checkpoint for %s / %s — "
+                    "one or more extractors reported an error; "
+                    "row will be retried on next run.",
+                    brand, test["filename"]
+                )
+                print(
+                    f"[SKIP CHECKPOINT] {brand} | {test['filename']} "
+                    f"— extraction error; will retry next run"
+                )
+                continue
 
             all_results.append(final_result)
 

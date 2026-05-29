@@ -168,7 +168,7 @@ Scores start at **50 (FDA parity)** and are adjusted by comparing the payer's po
 | 25–50 | Restricted Access |
 | 0–25 | Highly Restricted |
 
-Observed range across 79 real-world PA policies: **7–50, average 28**. No policy scores above 50 — consistent with payers universally adding restrictions beyond the FDA label.
+Observed range across 79 real-world PA policies: **7–50, mean 28, median 27**. No policy scores above 50 — consistent with payers universally adding restrictions beyond the FDA label. Distribution: 0 Preferred Access (≥75), 2 FDA Parity (50–74), 43 Restricted (25–49), 34 Highly Restricted (0–24).
 
 ---
 

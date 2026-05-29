@@ -1,8 +1,7 @@
 import json
+import logging
 import pandas as pd
-from utils.model_router import (
-    ModelRouter
-)
+from utils.model_router import get_router
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -18,9 +17,7 @@ class StepTherapyExtractor:
             "assets/therapy_dictionary_normalized.csv"
         )
 
-        self.model_router = (
-            ModelRouter()
-        )
+        self.model_router = get_router()
 
         self.known_therapies = sorted(
 
@@ -557,6 +554,10 @@ class StepTherapyExtractor:
 
         except Exception as e:
 
+            logging.warning(
+                "[StepTherapyExtractor] extraction failed for brand=%s pdf=%s: %s",
+                brand, pdf_name, e, exc_info=True
+            )
             return {
 
                 "parameter_group": (
@@ -581,7 +582,9 @@ class StepTherapyExtractor:
 
                 "confidence": 0,
 
-                "retrieved_pages": []
+                "retrieved_pages": [],
+
+                "extraction_error": True,
             }
 
     # =====================================================

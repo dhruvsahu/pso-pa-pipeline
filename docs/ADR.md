@@ -284,6 +284,29 @@ Keep the limit at **20K chars** for all extractors. The 40K proposal was rejecte
 
 ---
 
+## ADR-011 — Sentinel-to-NA Output Convention {#adr-011}
+
+**Status:** Accepted
+
+### Context
+Extractor no-match paths (e.g. the `AgeExtractor` brand-not-found path) historically returned internal sentinel strings such as `"NO BRAND MATCH FOUND"` as the value of a graded output cell. These strings were never part of the submission spec (which allows only valid values or `"NA"`) and leaked into the shipped CSV via `flatten_result`.
+
+### Decision
+1. **At source:** every extractor no-match path returns `"NA"` (not a sentinel string).
+2. **Defensively at flatten time:** `flatten_result` applies `clean_cell(value)` to all scalar cell values before emitting them. `clean_cell` maps any value in `_SENTINELS = {"NO BRAND MATCH FOUND", "", None}` to `"NA"` and passes everything else through unchanged.
+
+### Rationale
+- Source fix prevents new sentinels from entering the pipeline.
+- Defensive flatten guard corrects the already-shipped cell on regeneration without requiring a re-run.
+- Belt-and-suspenders approach means future extractor changes can't accidentally leak a new sentinel — they are silently coerced to `"NA"` at output time.
+
+### Consequences
+- **Positive:** No graded cell can contain an internal sentinel; the `287728-4459856.pdf / STELARA` Age cell is corrected on regeneration.
+- **Positive:** Adding a new sentinel to `_SENTINELS` is the only change needed if a new extractor introduces one.
+- **Negative:** `clean_cell` silences a sentinel silently — if a new sentinel indicates a real code bug, it will be masked in the CSV output (but still visible in the raw JSON and extractor logs).
+
+---
+
 ## Summary Table
 
 | ADR | Decision | Key Trade-off |
@@ -298,3 +321,4 @@ Keep the limit at **20K chars** for all extractors. The 40K proposal was rejecte
 | 008 | Slot model for step counting | Correct counts vs LLM cascade boundary errors |
 | 009 | Brand-aware renewal sweep | Correct renewal retrieval vs wider ±8 window noise |
 | 010 | 20K char context limit | Groq TPM safety vs very dense criteria sections |
+| 011 | Sentinel→NA output convention | Silences masking vs leaking internal sentinels into graded cells |

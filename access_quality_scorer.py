@@ -1,6 +1,10 @@
 import json
 import pandas as pd
 
+# Increment this when scoring weights or logic changes so stale checkpoint
+# rows can be identified and re-scored.
+SCORER_VERSION = "1.0"
+
 
 class AccessQualityScorer:
 
@@ -389,6 +393,8 @@ class AccessQualityScorer:
             "access_category": category,
 
             "fda_alignment": fda_alignment,
+
+            "scorer_version": SCORER_VERSION,
 
             "score_breakdown": {
                 "deductions": deductions,

@@ -1,7 +1,6 @@
 import json
-from utils.model_router import (
-    ModelRouter
-)
+import logging
+from utils.model_router import get_router
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -53,9 +52,7 @@ class ClinicalAccessExtractor:
             "consultation with"
         ]
 
-        self.model_router = (
-            ModelRouter()
-        )
+        self.model_router = get_router()
 
         # -------------------------------------------------
         # TIGHT SORT SIGNALS
@@ -407,9 +404,12 @@ class ClinicalAccessExtractor:
         IMPORTANT:
 
         tb_test_required must be EXACTLY ONE OF:
-        - "Yes"
-        - "No"
-        - "NA"
+        - "Yes" — TB test IS explicitly required in the criteria
+        - "No"  — Criteria pages found and reviewed; TB test is NOT required
+        - "NA"  — No relevant PA criteria found in the provided context
+
+        Use "No" when criteria pages are present but say nothing about TB testing.
+        Reserve "NA" ONLY for when no relevant prior-authorization criteria appear in the context.
 
         specialist_types must be EXACTLY ONE OF:
         - array of specialist types
@@ -565,6 +565,10 @@ class ClinicalAccessExtractor:
 
         except Exception as e:
 
+            logging.warning(
+                "[ClinicalAccessExtractor] extraction failed for brand=%s pdf=%s: %s",
+                brand, pdf_name, e, exc_info=True
+            )
             return {
 
                 "parameter_group": (
@@ -583,7 +587,9 @@ class ClinicalAccessExtractor:
 
                 "reasoning": str(e),
 
-                "confidence": 0
+                "confidence": 0,
+
+                "extraction_error": True,
             }
 
 

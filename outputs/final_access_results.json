@@ -76,15 +76,17 @@
     },
     "access_quality": {
       "brand": "STELARA",
-      "access_quality_score": 70,
-      "access_category": "FDA Parity",
-      "fda_alignment": "Near FDA parity",
-      "score_breakdown": [
-        "Moderate step therapy burden",
-        "Precertification required",
-        "Reauthorization required",
-        "Age restriction applied"
-      ]
+      "access_quality_score": 25,
+      "access_category": "Restricted Access",
+      "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
+      "score_breakdown": {
+        "deductions": [
+          "Brand step therapy: 2 step(s) (-20)",
+          "Reauthorization not in FDA label (-5)"
+        ],
+        "bonuses": []
+      }
     }
   },
   {
@@ -173,6 +175,7 @@
       "access_quality_score": 12,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 2 step(s) (-20)",
@@ -268,6 +271,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -359,6 +363,7 @@
       "access_quality_score": 25,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 2 step(s) (-20)",
@@ -450,6 +455,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -550,6 +556,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -653,6 +660,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -743,6 +751,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -841,6 +850,7 @@
       "access_quality_score": 37,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -925,6 +935,7 @@
       "access_quality_score": 45,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)"
@@ -1008,6 +1019,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -1106,6 +1118,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1199,6 +1212,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1298,6 +1312,7 @@
       "access_quality_score": 7,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 3 step(s) (-30)",
@@ -1387,6 +1402,7 @@
       "access_quality_score": 30,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1478,6 +1494,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1577,6 +1594,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1678,6 +1696,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1771,6 +1790,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)"
@@ -1864,6 +1884,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -1942,6 +1963,7 @@
       "access_quality_score": 45,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Reauthorization not in FDA label (-5)"
@@ -2036,6 +2058,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -2130,6 +2153,7 @@
       "access_quality_score": 27,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -2230,6 +2254,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -2325,6 +2350,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -2418,6 +2444,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -2500,6 +2527,7 @@
       "access_quality_score": 45,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -2570,6 +2598,7 @@
       "access_quality_score": 50,
       "access_category": "FDA Parity",
       "fda_alignment": "Favorable relative to FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [],
         "bonuses": []
@@ -2672,6 +2701,7 @@
       "access_quality_score": 30,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -2763,6 +2793,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -2848,6 +2879,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -2930,6 +2962,7 @@
       "access_quality_score": 45,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)"
@@ -3008,6 +3041,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -3110,6 +3144,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Reauthorization not in FDA label (-5)",
@@ -3196,6 +3231,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Reauthorization not in FDA label (-5)",
@@ -3279,6 +3315,7 @@
       "access_quality_score": 30,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -3368,6 +3405,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -3470,6 +3508,7 @@
       "access_quality_score": 20,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 3 step(s) (-15)",
@@ -3559,6 +3598,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -3649,6 +3689,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 2 step(s) (-10)",
@@ -3737,6 +3778,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 2 step(s) (-10)",
@@ -3822,6 +3864,7 @@
       "access_quality_score": 30,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -3915,6 +3958,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -4018,6 +4062,7 @@
       "access_quality_score": 12,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 2 step(s) (-20)",
@@ -4118,6 +4163,7 @@
       "access_quality_score": 27,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -4221,6 +4267,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -4327,6 +4374,7 @@
       "access_quality_score": 7,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 2 step(s) (-20)",
@@ -4412,6 +4460,7 @@
       "access_quality_score": 37,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -4493,6 +4542,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)"
@@ -4572,6 +4622,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)"
@@ -4646,6 +4697,7 @@
       "access_quality_score": 50,
       "access_category": "FDA Parity",
       "fda_alignment": "Favorable relative to FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [],
         "bonuses": []
@@ -4724,6 +4776,7 @@
       "access_quality_score": 30,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -4825,6 +4878,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -4911,6 +4965,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -5006,6 +5061,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -5093,6 +5149,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -5178,6 +5235,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -5259,6 +5317,7 @@
       "access_quality_score": 37,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Specialist restriction not in FDA label (-8)",
@@ -5340,6 +5399,7 @@
       "access_quality_score": 37,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Specialist restriction not in FDA label (-8)",
@@ -5430,6 +5490,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -5524,6 +5585,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -5629,6 +5691,7 @@
       "access_quality_score": 27,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -5741,6 +5804,7 @@
       "access_quality_score": 27,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -5853,6 +5917,7 @@
       "access_quality_score": 27,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -5958,6 +6023,7 @@
       "access_quality_score": 12,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6070,6 +6136,7 @@
       "access_quality_score": 12,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6167,6 +6234,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6277,6 +6345,7 @@
       "access_quality_score": 12,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6375,6 +6444,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6471,6 +6541,7 @@
       "access_quality_score": 25,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6561,6 +6632,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -6640,6 +6712,7 @@
       "access_quality_score": 40,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)"
@@ -6736,6 +6809,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -6815,6 +6889,7 @@
       "access_quality_score": 45,
       "access_category": "Restricted Access",
       "fda_alignment": "Near FDA parity",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Reauthorization not in FDA label (-5)"
@@ -6902,6 +6977,7 @@
       "access_quality_score": 27,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 2 step(s) (-10)",
@@ -7008,6 +7084,7 @@
       "access_quality_score": 17,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -7104,6 +7181,7 @@
       "access_quality_score": 32,
       "access_category": "Restricted Access",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Generic step therapy: 1 step(s) (-5)",
@@ -7199,6 +7277,7 @@
       "access_quality_score": 22,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
@@ -7305,6 +7384,7 @@
       "access_quality_score": 20,
       "access_category": "Highly Restricted",
       "fda_alignment": "More restrictive than FDA label",
+      "scorer_version": "1.0",
       "score_breakdown": {
         "deductions": [
           "Brand step therapy: 1 step(s) (-10)",
