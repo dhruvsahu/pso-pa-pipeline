@@ -37,7 +37,7 @@ The pipeline auto-selects the backend — add **one** key:
 | Key | Provider | Notes |
 |-----|----------|-------|
 | `GROQ_API_KEY` | Groq — llama-3.3-70b | Recommended for presentation |
-| `GEMINI_API_KEY` | Gemini 3.1 Flash Lite | Free tier: 15 RPM, 500 RPD |
+| `GEMINI_API_KEY` | Gemini 3.1 Flash Lite (`gemini-3.1-flash-lite`) | Free tier: 15 RPM, 500 RPD |
 
 No key at all → falls back to local **Ollama** (must have Ollama running).
 
@@ -168,7 +168,7 @@ Scores start at **50 (FDA parity)** and are adjusted by comparing the payer's po
 | 25–50 | Restricted Access |
 | 0–25 | Highly Restricted |
 
-Observed range across 79 real-world PA policies: **7–50, mean 28, median 27**. No policy scores above 50 — consistent with payers universally adding restrictions beyond the FDA label. Distribution: 0 Preferred Access (≥75), 2 FDA Parity (50–74), 43 Restricted (25–49), 34 Highly Restricted (0–24).
+Observed range across 79 real-world PA policies (scorer v1.0): **7–50, average 27.8, median 27**. No policy scores above 50 — consistent with payers universally adding restrictions beyond the FDA label. Category split: **34 Highly Restricted, 43 Restricted Access, 2 FDA Parity** (the 2 at exactly 50). These figures are reproducible: `python rescore.py` re-scores every row from its stored extraction values and `python result_formatter.py` regenerates the CSV/XLSX.
 
 ---
 
@@ -178,7 +178,7 @@ Configured via `.env`. Zero code changes required to switch:
 
 | Provider | Use case | Key |
 |----------|----------|-----|
-| `gemini` | Development (Gemini 3.1 Flash Lite, 15 RPM) | `GEMINI_API_KEY` |
+| `gemini` | Development (Gemini 3.1 Flash Lite — `gemini-3.1-flash-lite`, 15 RPM) | `GEMINI_API_KEY` |
 | `groq` | Presentation (llama-3.3-70b, 12K TPM) | `GROQ_API_KEY` |
 | `ollama` | Local / offline fallback | — |
 

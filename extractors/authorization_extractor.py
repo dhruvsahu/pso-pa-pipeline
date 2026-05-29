@@ -1,6 +1,8 @@
 import json
 import logging
-from utils.model_router import get_router
+from utils.model_router import (
+    get_router
+)
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -73,7 +75,9 @@ class AuthorizationExtractor:
             "table of contents"
         ]
 
-        self.model_router = get_router()
+        self.model_router = (
+            get_router()
+        )
 
     # =====================================================
     # AUTHORIZATION CONTEXT EXTRACTION
@@ -429,14 +433,10 @@ Required JSON format:
 }}
 
 IMPORTANT:
-Duration fields (initial_authorization_months, reauthorization_duration_months) must be:
-- integer month value (e.g. 6, 12) — explicit duration stated in the policy
-- "Unspecified" — authorization/approval section exists for this brand but no explicit
-  duration in months is stated
-- "NA" — no authorization criteria found for this brand in the provided context
-
-Use "Unspecified" (NOT "NA") when an authorization or approval section for this brand
-exists in the context but does not specify a number of months.
+Duration fields may contain:
+- integer month value
+- "Unspecified"
+- "NA"
 """
         response = self.model_router.generate(
 
@@ -528,16 +528,15 @@ exists in the context but does not specify a number of months.
                 cleaned_output
             )
 
-            # ---------------------------------------------
-            # Post-parse coercion:
-            # When context exists but no explicit months found,
-            # use "Unspecified" rather than None/"NA" (Req 2.4).
-            # ---------------------------------------------
-            def _coerce_duration(val):
-                """None or 'NA' → 'Unspecified' when auth context exists."""
-                if val is None or val == "NA":
-                    return "Unspecified"
-                return val
+            # An authorization/approval section WAS retrieved (we are past
+            # the empty-context guard), so PA applies for this brand. Per the
+            # business rule, Initial Authorization must then be a duration or
+            # "Unspecified" — never "NA". Coerce missing/NA to "Unspecified".
+            init_auth = parsed_output.get(
+                "initial_authorization_months"
+            )
+            if init_auth in (None, "", "NA"):
+                init_auth = "Unspecified"
 
             # ---------------------------------------------
             # FINAL OUTPUT
@@ -551,13 +550,7 @@ exists in the context but does not specify a number of months.
 
                 "brand": brand,
 
-                "initial_authorization_months":
-
-                    _coerce_duration(
-                        parsed_output.get(
-                            "initial_authorization_months"
-                        )
-                    ),
+                "initial_authorization_months": init_auth,
 
                 "reauthorization_required":
 
@@ -594,9 +587,10 @@ exists in the context but does not specify a number of months.
         except Exception as e:
 
             logging.warning(
-                "[AuthorizationExtractor] extraction failed for brand=%s pdf=%s: %s",
-                brand, pdf_name, e, exc_info=True
+                "Authorization extraction failed for %s / %s: %s",
+                brand, pdf_name, e
             )
+
             return {
 
                 "parameter_group": (
@@ -615,9 +609,9 @@ exists in the context but does not specify a number of months.
 
                 "reasoning": str(e),
 
-                "confidence": 0,
-
                 "extraction_error": True,
+
+                "confidence": 0
             }
 
 

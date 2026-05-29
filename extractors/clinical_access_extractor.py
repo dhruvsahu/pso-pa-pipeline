@@ -1,6 +1,8 @@
 import json
 import logging
-from utils.model_router import get_router
+from utils.model_router import (
+    get_router
+)
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -52,7 +54,9 @@ class ClinicalAccessExtractor:
             "consultation with"
         ]
 
-        self.model_router = get_router()
+        self.model_router = (
+            get_router()
+        )
 
         # -------------------------------------------------
         # TIGHT SORT SIGNALS
@@ -334,15 +338,23 @@ class ClinicalAccessExtractor:
 
         TB TEST REQUIRED:
 
+        The text below IS the brand's clinical-access criteria (it was
+        retrieved because it matched). So the absence of a TB requirement
+        means TB is NOT required, not "unknown".
+
         Return:
         - "Yes"
-            if TB testing/screening is explicitly required
+            if TB testing/screening is required (explicitly, or as a
+            documented prerequisite/criterion for approval)
 
         - "No"
-            if policy explicitly states TB testing is not required
+            if the policy does not require TB testing — whether it
+            explicitly states so OR simply does not mention a TB test
+            anywhere in these criteria
 
-        - "NA"
-            if no usable TB testing evidence exists
+        Do NOT return "NA" for TB. ("NA" is reserved for the case where no
+        clinical-access criteria were found at all, which is handled
+        outside the model.)
 
         SPECIALIST TYPES:
 
@@ -404,12 +416,8 @@ class ClinicalAccessExtractor:
         IMPORTANT:
 
         tb_test_required must be EXACTLY ONE OF:
-        - "Yes" — TB test IS explicitly required in the criteria
-        - "No"  — Criteria pages found and reviewed; TB test is NOT required
-        - "NA"  — No relevant PA criteria found in the provided context
-
-        Use "No" when criteria pages are present but say nothing about TB testing.
-        Reserve "NA" ONLY for when no relevant prior-authorization criteria appear in the context.
+        - "Yes"
+        - "No"
 
         specialist_types must be EXACTLY ONE OF:
         - array of specialist types
@@ -516,11 +524,13 @@ class ClinicalAccessExtractor:
 
                 "brand": brand,
 
+                # Context WAS found (we are past the empty-context guard),
+                # so "TB not mentioned" means "No", not "NA".
                 "tb_test_required":
 
                     parsed_output.get(
                         "tb_test_required",
-                        "NA"
+                        "No"
                     ),
 
                 "specialist_types":
@@ -560,9 +570,10 @@ class ClinicalAccessExtractor:
         except Exception as e:
 
             logging.warning(
-                "[ClinicalAccessExtractor] extraction failed for brand=%s pdf=%s: %s",
-                brand, pdf_name, e, exc_info=True
+                "Clinical access extraction failed for %s / %s: %s",
+                brand, pdf_name, e
             )
+
             return {
 
                 "parameter_group": (
@@ -581,9 +592,9 @@ class ClinicalAccessExtractor:
 
                 "reasoning": str(e),
 
-                "confidence": 0,
-
                 "extraction_error": True,
+
+                "confidence": 0
             }
 
 

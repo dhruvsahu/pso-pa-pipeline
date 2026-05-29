@@ -1,6 +1,8 @@
 import json
 import logging
-from utils.model_router import get_router
+from utils.model_router import (
+    get_router
+)
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -13,7 +15,9 @@ class UtilizationManagementExtractor:
 
     def __init__(self):
         
-        self.model_router = get_router()
+        self.model_router = (
+            get_router()
+        )
 
         # -------------------------------------------------
         # RETRIEVAL KEYWORDS
@@ -462,9 +466,10 @@ quantity_limits must be EXACTLY ONE OF:
         except Exception as e:
 
             logging.warning(
-                "[UtilizationMgmtExtractor] extraction failed for brand=%s pdf=%s: %s",
-                brand, pdf_name, e, exc_info=True
+                "Utilization extraction failed for %s / %s: %s",
+                brand, pdf_name, e
             )
+
             return {
 
                 "parameter_group": (
@@ -479,9 +484,9 @@ quantity_limits must be EXACTLY ONE OF:
 
                 "reasoning": str(e),
 
-                "confidence": 0,
-
                 "extraction_error": True,
+
+                "confidence": 0
             }
 
 # =========================================================

@@ -16,64 +16,100 @@ the change, and the reasoning. It is updated **after each task is implemented** 
 
 | Task | Finding | Files | Status |
 |------|---------|-------|--------|
-| task-1.1 | P0-1 | `result_formatter.py` | ✅ DONE |
-| task-1.2 | P0-2 | `result_formatter.py`, `app.py` | ✅ DONE |
-| task-2.1 | P0-4 | `age_extractor.py`, `result_formatter.py`, `docs/ADR.md` | ✅ DONE |
-| task-2.2 | P1-9 | `extractors/clinical_access_extractor.py`, `extractors/authorization_extractor.py` | ✅ DONE |
+| task-1.1 | P0-1 | `result_formatter.py` | **DONE** |
+| task-1.2 | P0-2 | `result_formatter.py`, `app.py` | **DONE** |
+| task-2.1 | P0-4 | `age_extractor.py`, `result_formatter.py`, `docs/ADR.md` | **DONE** |
+| task-2.2 | P1-9 | `extractors/clinical_access_extractor.py`, `extractors/authorization_extractor.py` | **DONE** |
 | task-3.1 | P0-5 | `access_quality_scorer.py` | **DEFERRED** (Devil's Advocate; downgraded to P2) |
-| task-4.1 | P1-1 | `utils/model_router.py`, `extractors/*.py` | ✅ DONE |
-| task-4.2 | P1-2 | `extractors/*.py`, `run_full_pipeline.py` | ✅ DONE |
-| task-4.3 | P1-10 | `app.py` | ✅ DONE |
-| task-4.4 | P1-5 | `.env.example` | ✅ DONE |
-| task-5.1 | P1-6 | `access_quality_scorer.py`, `rescore.py`, `outputs/*`, `README.md` | ✅ DONE |
+| task-4.1 | P1-1 | `utils/model_router.py`, `extractors/*.py` | **DONE** |
+| task-4.2 | P1-2 | `extractors/*.py`, `run_full_pipeline.py` | **DONE** |
+| task-4.3 | P1-10 | `app.py` | **DONE** |
+| task-4.4 | P1-5 | `README.md`, `.env.example` | **DONE** |
+| task-5.1 | P1-6 | `access_quality_scorer.py`, `rescore.py`, `outputs/*`, `README.md` | **DONE** |
 
 ---
 
 ## task-1.1 — P0-1: Empty-list free-text params emit `NA`
-**Status:** ✅ DONE
-**Planned change:** Add `join_or_na(value, sep="; ")` to `result_formatter.py`; use it for the four
-free-text list columns; guard module-level I/O under `main()`/`__main__`.
+**Status:** DONE
 **Reasoning (P0-1):** `"; ".join([])` returns `""`, and the `or "NA"` fallback never fires for an
 empty list, so 25 cells ship blank — violates "all params populated". Import-guarding lets the
-re-score step import `flatten_result` without side effects.
-**Actual changes:**
-- `result_formatter.py`: added `join_or_na(value, sep)` helper; updated 4 list-valued columns to use it; moved batch I/O into `main()` guarded by `if __name__ == "__main__"`.
-- Simultaneously added `SUBMISSION_COLUMNS` (see task-1.2 below) in the same file.
+re-score step (task-5.1) and `app.py` import `flatten_result` / `join_or_na` without side effects.
+**Actual changes (`result_formatter.py`):**
+- Added `join_or_na(value, sep="; ")` — for a list it joins with `sep` but returns `"NA"` for an
+  **empty** list; for non-list it returns `value or "NA"`.
+- Switched all **four** free-text list columns to it: `Step Therapy Requirements Documented in
+  Policy` (st_reqs), `Specialist Types` (spec, `sep=", "` to preserve the original comma separator),
+  `Quantity Limits` (ql), and `Reauthorization Requirements Documented in Policy` (reauth_reqs).
+  *(The reauth_reqs field was easy to miss — it lives below the other three; a verification test
+  caught that it was still blank, then it was fixed.)*
+- Wrapped the load/flatten/save module body into `main()` invoked under `if __name__ == "__main__"`,
+  so importing the module no longer reads JSON or writes CSV/XLSX.
+**Verification:** `.venv/bin/python` — importing the module prints nothing and does not touch the
+CSV; `join_or_na([]) == "NA"`, `join_or_na(["a","b"]) == "a; b"`, `join_or_na(None) == "NA"`;
+`flatten_result` on a row with all-empty free-text lists yields no blank cells.
+**Notes:**
+- Did **not** change column header/order (that is task-1.2) or add the sentinel→NA map (task-2.1).
+- The shipped `outputs/final_access_results.csv` still shows the 25 blanks; they are corrected when
+  task-5.1 regenerates from JSON.
+- Installed `pandas` into the project `.venv` (venv-only, never global) — required to import the
+  module for verification and for the later regeneration step.
 
 ## task-1.2 — P0-2: CSV header + column order match the template
-**Status:** ✅ DONE
-**Planned change:** Add module-level `SUBMISSION_COLUMNS` (hyphenated `Step through-Phototherapy`;
-`Quantity Limits` before `Specialist Types`); reorder `flatten_result`; reindex DataFrame before
-write; `app.py` imports `SUBMISSION_COLUMNS`.
+**Status:** DONE
 **Reasoning (P0-2):** Output header `Step through Phototherapy` (space) and the swapped
 Specialist/Quantity order break exact/positional grader matching. One schema source prevents the
 two definitions (`result_formatter` + `app.py`) from drifting.
 **Actual changes:**
-- `result_formatter.py`: added module-level `SUBMISSION_COLUMNS` list with hyphenated `Step through-Phototherapy` and `Quantity Limits` before `Specialist Types`; `flatten_result` key uses hyphenated name; `main()` reindexes DataFrame to `SUBMISSION_COLUMNS` before write.
-- `app.py`: imports `SUBMISSION_COLUMNS` from `result_formatter`; removed the local `CSV_COLUMNS` definition; `CSV_COLUMNS = SUBMISSION_COLUMNS`.
+- `result_formatter.py`: added module-level `SUBMISSION_COLUMNS` (the canonical 15-column schema —
+  hyphenated `Step through-Phototherapy`, `Quantity Limits` before `Specialist Types`). Renamed the
+  phototherapy key and swapped the Quantity/Specialist entries in `flatten_result` so its key order
+  equals `SUBMISSION_COLUMNS`. `main()` now builds the DataFrame with `columns=SUBMISSION_COLUMNS`
+  to force exact names + order on write.
+- `app.py`: imports `SUBMISSION_COLUMNS` from `result_formatter`, deleted its duplicate
+  `CSV_COLUMNS`, and `append_to_csv` uses `SUBMISSION_COLUMNS` for the `DictWriter` fieldnames.
+**Verification:** `flatten_result(...)` keys `== SUBMISSION_COLUMNS`; `SUBMISSION_COLUMNS` `==` the
+`PA_Business_Rules.xlsx` Submissions-tab header exactly (names + order); `py_compile` OK for both
+files.
+**Notes:** Shipped CSV still reflects old header/order until task-5.1 regenerates.
 
 ## task-2.1 — P0-4: Map internal sentinels to `NA`; update ADR
-**Status:** ✅ DONE
-**Planned change:** `age_extractor` no-match path returns `"NA"`; `flatten_result` applies a
-`clean_cell` sentinel→`NA` map to all values; add ADR entry on the sentinel→`NA` convention.
+**Status:** DONE
 **Reasoning (P0-4):** `NO BRAND MATCH FOUND` leaked into a graded Age cell. Fixing at source
 prevents recurrence; the flatten guard corrects the already-shipped cell on regeneration; the ADR
 records the convention.
 **Actual changes:**
-- `extractors/age_extractor.py`: changed no-brand-match path `"value": "NO BRAND MATCH FOUND"` → `"value": "NA"`.
-- `result_formatter.py`: added `_SENTINELS` set and `clean_cell(v)` helper; applied `clean_cell()` to the Age value in `flatten_result`.
-- `docs/ADR.md`: added ADR-011 "Sentinel-to-NA Output Convention" with context, decision, rationale, consequences; added to summary table.
+- `extractors/age_extractor.py`: the no-brand-match path now returns `"value": "NA"` (was
+  `"NO BRAND MATCH FOUND"`); the brand-not-found detail stays in `reasoning`.
+- `result_formatter.py`: added `_SENTINELS = {"NO BRAND MATCH FOUND", "", None}` and
+  `clean_cell(value)`; `flatten_result` now returns `{k: clean_cell(v) ...}` so every emitted cell
+  is sentinel/blank-free. (Valid values incl. numeric `0` pass through.)
+- `docs/ADR.md`: added **ADR-011 — Internal Sentinels Mapped to "NA" in Output** (TOC entry +
+  full section + summary-table row) documenting the two-layer source/defensive convention.
+**Verification:** `clean_cell` maps sentinel/`""`/`None`→`"NA"`, preserves `0` and `">=18"`; the
+real stored row `287728-4459856.pdf`/STELARA (`age.value == "NO BRAND MATCH FOUND"`) now flattens
+to `Age == "NA"`; `py_compile` OK.
+**Notes:** Shipped CSV cell corrected when task-5.1 regenerates.
 
 ## task-2.2 — P1-9: `TB`/`Initial Auth` honor `No` / `Unspecified`
-**Status:** ✅ DONE (forward-fixing — effective on next full LLM run)
-**Planned change:** TB → `"No"` when parsed-but-not-required, `"NA"` only on no-context/error;
-Initial Auth → `"Unspecified"` when a PsO auth section exists but no months found.
+**Status:** DONE
 **Reasoning (P1-9):** Spec treats TB as Y/N and requires duration-or-`Unspecified` when PA applies;
-emitting `NA` in these cases diverges from gold. Forward-fixing (next run); shipped CSV reflects it
-only where stored data supports the derivation.
+emitting `NA` in these cases diverges from gold. Forward-fixing (next run).
 **Actual changes:**
-- `extractors/clinical_access_extractor.py`: updated `tb_test_required` prompt rules to distinguish "No" (criteria found, TB not required) from "NA" (no criteria context at all).
-- `extractors/authorization_extractor.py`: updated duration field prompt rules to use "Unspecified" (not "NA") when auth section exists but no months stated; added `_coerce_duration()` post-parse helper that maps None/"NA" → "Unspecified" when context was found and parsed.
+- `extractors/clinical_access_extractor.py`: rewrote the TB prompt rule — since the retrieved text
+  *is* the brand's criteria, absence of a TB requirement means **"No"**, not unknown; the model is
+  told to return only `"Yes"`/`"No"` for TB (removed `"NA"` from the TB allowed-values list). The
+  context-found return now defaults `tb_test_required` to `"No"` (was `"NA"`); the empty-context
+  guard and the `except` path still return `"NA"`.
+- `extractors/authorization_extractor.py`: in the context-found branch, compute
+  `init_auth = parsed_output.get("initial_authorization_months")` and coerce
+  `None/""/"NA" → "Unspecified"` (an auth section was retrieved ⇒ PA applies ⇒ rule forbids `NA`).
+  The empty-context guard still returns `"NA"`. (The prompt already distinguished
+  `Unspecified`/`NA`.)
+**Verification (stubbed context + LLM):** TB context-found & omitted → `"No"`, no-context → `"NA"`;
+Initial Auth context-found & LLM `"NA"` → `"Unspecified"`, no-context → `"NA"`. `py_compile` OK.
+**Notes:** Forward-fix only — the shipped CSV (regenerated by task-5.1 from the **stored** JSON)
+will not change for these two columns, because re-scoring/re-flatten does not re-run the LLM. Effect
+appears on the next full pipeline run.
 
 ## task-3.1 — P0-5: Re-anchor Access Score to full 0–100
 **Status:** DEFERRED (downgraded P0 → P2). No code change.
@@ -90,59 +126,106 @@ Original proposal preserved in `requirements.md` Requirement 3 (marked deferred)
 **Actual changes:** none (deferred).
 
 ## task-4.1 — P1-1: Shared, thread-safe `ModelRouter`
-**Status:** ✅ DONE
-**Planned change:** `get_router()` module singleton (double-checked lock); extractors use it;
-`self._throttle_lock` around throttle read-modify-write + post-call update; tag Groq window entries
-by id and replace by id.
+**Status:** DONE
 **Reasoning (P1-1):** 5 extractor-owned routers → 5 throttle windows → rate limit ~5× too loose
 (ADR-005 wrongly assumed a singleton). Under threaded Flask the window is a data race and the
-estimate/replace can pop the wrong entry.
+estimate/replace could pop the wrong entry.
 **Actual changes:**
-- `utils/model_router.py`: added `import threading`, `import uuid`; added `self._throttle_lock`; wrapped Groq and Gemini throttle read-modify-write + sleep under lock (released while sleeping); changed Groq window from `deque` to `list` of `(ts, tokens, call_id)` tuples; added `_groq_update_actual(call_id, actual_tokens)` to replace entry by id; added module-level `_INSTANCE`/`_INSTANCE_LOCK` and `get_router()` double-checked-lock singleton; removed dead `select_model()` method (collapsed to `"qwen2.5:7b"` inline in Ollama path).
-- All 5 `extractors/*.py`: changed `from utils.model_router import ModelRouter` → `from utils.model_router import get_router`; changed `ModelRouter()` → `get_router()`.
+- `utils/model_router.py`:
+  - Added module-level `get_router()` — double-checked-lock singleton (`_ROUTER_SINGLETON`,
+    `_ROUTER_SINGLETON_LOCK`).
+  - `__init__`: added `self._throttle_lock = threading.Lock()` and `self._groq_uid` counter.
+  - Groq window entries are now `(timestamp, tokens, uid)`. `_groq_throttle` runs its
+    read-modify-write **inside** `self._throttle_lock`, returns the entry's `uid`, and releases the
+    lock before `time.sleep`. New `_groq_record_actual(uid, actual_tokens)` replaces the entry by
+    **uid** (not by position or by matching the estimate). `generate()` (Groq) captures `groq_uid`
+    and calls `_groq_record_actual` instead of the old pop-if-matches-estimate logic.
+  - `_gemini_throttle` likewise wraps its read-modify-write in the lock and sleeps outside it.
+- `extractors/{age,clinical_access,authorization,utilization_management,step_therapy}_extractor.py`:
+  import `get_router` and call `get_router()` instead of `ModelRouter()`.
+- `pipeline_runner.py` / `run_full_pipeline.py`: **no change needed** — they never constructed a
+  router directly (only via extractors); the comments referencing ModelRouter remain accurate.
+**Verification:** `get_router()` returns the same instance twice; `AgeExtractor` and
+`ClinicalAccessExtractor` share that one instance; two `_groq_throttle` calls with the *same*
+estimate get distinct uids, and `_groq_record_actual(uid1, 4242)` updates entry0 only, leaves
+entry1=1000, window size stays 2 (no wrong-entry pop). `py_compile` OK for router + all extractors.
+**Notes:** Installed `groq`, `google-generativeai`, `ollama`, `python-dotenv` into the project
+`.venv` (venv-only) to import the router for testing. (A `google.generativeai` deprecation
+FutureWarning prints on import — library-level, unrelated to these changes.)
 
 ## task-4.2 — P1-2: Surface extraction errors; don't checkpoint failures
-**Status:** ✅ DONE
-**Planned change:** Each extractor `except` adds `"extraction_error": True` + `logging.warning`;
-`run_full_pipeline` skips checkpointing rows with any errored sub-result.
+**Status:** DONE
 **Reasoning (P1-2):** Swallowed errors produce all-`NA` rows indistinguishable from real "no data",
 checkpointed as success and never retried — silently corrupting accuracy and the score.
 **Actual changes:**
-- All 5 `extractors/*.py`: added `import logging`; added `"extraction_error": True` and `logging.warning(...)` to the main `extract()` except block.
-- `run_full_pipeline.py`: added `import logging`; added post-assembly check for `extraction_error` in any of the 5 sub-result dicts; if found, logs warning, prints skip message, and `continue`s without appending to `all_results` or writing checkpoint — so the row is retried on next run.
+- All five extractors (`age`, `step_therapy`, `authorization`, `utilization_management`,
+  `clinical_access`): added `import logging`; the `extract()` `except Exception as e` block now
+  calls `logging.warning("... failed for %s / %s: %s", brand, pdf_name, e)` and adds
+  `"extraction_error": True` to the returned fallback dict (NA values retained so scoring still
+  runs, but the row is now distinguishable from genuine no-data).
+- `run_full_pipeline.py`: after assembling `final_result`, it computes `errored = [...]` over the
+  five sub-results; if any has `extraction_error`, it prints `[SKIP CHECKPOINT] ...` and `continue`s
+  **without** appending/writing the checkpoint — so the `(filename, brand)` key stays out of
+  `completed_keys` and is retried next run.
+**Verification:** `AgeExtractor().extract(pages=None, ...)` (forces an internal exception) returns
+`extraction_error=True` and logs `"Age extraction failed"`; the skip-detection list comprehension
+flags the errored sub-result. `py_compile` OK for all extractors + `run_full_pipeline.py`.
+**Notes:** Left `authorization`'s `reauthorization_required: False` bool sentinel as-is (that is the
+separate, out-of-scope P2-3 consistency item).
 
 ## task-4.3 — P1-10: Resource-safe web UI sessions
-**Status:** ✅ DONE
-**Planned change:** Store `(path, created_at)` under a `threading.Lock`; `SESSION_TTL_SECONDS`
-sweep of expired sessions on each `/upload`; keep `/stream` `finally` cleanup.
+**Status:** DONE
 **Reasoning (P1-10):** Upload-without-stream leaks the temp file and `SESSIONS` entry forever; the
 dict is mutated across threads (`threaded=True`) with no lock.
-**Actual changes:**
-- `app.py`: added `import threading`, `import time`; added `SESSIONS_LOCK` and `SESSION_TTL_SECONDS = 600`; changed session store to `(path, created_at)` tuples; added `_sweep_expired_sessions()` called on each `/upload`; all SESSIONS reads/writes wrapped in `SESSIONS_LOCK`; `/stream` finally block pops session under lock before unlinking file.
+**Actual changes (`app.py`):**
+- Added `import time`, `import threading`.
+- `SESSIONS` now maps `session_id → (path, created_at)`, guarded by `_SESSIONS_LOCK`; added
+  `SESSION_TTL_SECONDS = 600`.
+- New lock-guarded helpers: `_register_session(path)`, `_get_session_path(sid)`,
+  `_discard_session(sid)` (idempotent pop + unlink), and `_sweep_sessions()` (pops + unlinks any
+  session older than the TTL).
+- `/upload` calls `_sweep_sessions()` then `_register_session(...)`. `/stream` reads the path via
+  `_get_session_path(...)` and its `finally` calls `_discard_session(session_id)` (replaces the
+  raw `os.unlink` + `SESSIONS.pop`).
+**Verification:** registered 2 sessions; forcing one past the TTL and sweeping removes it and
+unlinks its temp file while the fresh one survives; `_discard_session` called twice is a no-op the
+second time and unlinks the file; `_get_session_path("nope")` → `None`. `py_compile` OK.
+**Notes:** Installed `flask` into the project `.venv` (venv-only) to import `app.py` for testing.
 
 ## task-4.4 — P1-5: Align Gemini model name in docs
-**Status:** ✅ DONE
-**Planned change:** Set the Gemini model name in `README.md` and `.env.example` to match
-`model_router.py` (`gemini-3.1-flash-lite`).
+**Status:** DONE
 **Reasoning (P1-5):** Per product decision the model is valid — this is a documentation
 consistency fix only, not a code change.
 **Actual changes:**
-- `.env.example`: changed `gemini-2.0-flash-lite` → `gemini-3.1-flash-lite` in the comment.
-- `README.md`: already had the correct name from a prior session; no change needed.
+- `.env.example` line 7: `gemini-2.0-flash-lite` → `gemini-3.1-flash-lite` (the only real
+  inconsistency — it disagreed with the code).
+- `README.md`: added the exact id `gemini-3.1-flash-lite` to the two Gemini rows (the backends
+  table and the LLM-backends table), which already used the human name "Gemini 3.1 Flash Lite".
+**Verification:** all Gemini references in `utils/model_router.py`, `.env.example`, and `README.md`
+now read `gemini-3.1-flash-lite`; grep confirms no `2.0` remnants. No code change.
 
 ## task-5.1 — P1-6: Scorer version stamp + re-score + regenerate + README stats
-**Status:** ✅ DONE
-**Planned change:** Add `SCORER_VERSION = "1.0"`; emit per row. Add a re-score routine that recomputes
-every row's `access_quality` from stored extraction dicts (no LLM) using the **current** scorer
-(P0-5 deferred — no re-anchor) — fixes the stale 70 row (→ ≈25) and normalizes all rows to the
-`{deductions, bonuses}` schema. Regenerate CSV/XLSX. Recompute README score-distribution stats from
-the new CSV. (No longer blocked by task-3.1.)
-**Reasoning (P1-6):** The JSON mixes two scorer schemas (one legacy flat-list row scoring 70,
-impossible under the current model), so the dataset isn't reproducible from current code, and the
-README's "7–50, none above 50" contradicts the data. A version stamp + deterministic re-score makes
-the dataset consistent and reproducible.
+**Status:** DONE
+**Reasoning (P1-6):** The JSON mixed two scorer schemas (one legacy flat-list row scoring 70,
+impossible under the current model), so the dataset wasn't reproducible from current code, and the
+README's "7–50, none above 50" was contradicted by the actual max of 70. A version stamp +
+deterministic re-score makes the dataset consistent and reproducible.
 **Actual changes:**
-- `access_quality_scorer.py`: added module-level `SCORER_VERSION = "1.0"`; added `"scorer_version": SCORER_VERSION` to the `calculate_score` return dict.
-- `rescore.py` (new file): loads JSON, re-scores every row with current scorer, writes updated JSON, regenerates CSV/XLSX via `flatten_result`/`SUBMISSION_COLUMNS`, prints distribution stats.
-- Ran `rescore.py`: stale row `377585-4984547.pdf/STELARA` corrected 70 → 25; all 79 rows now stamped `scorer_version="1.0"`. Stats: min=7, max=50, mean=27.8, median=27; 0 rows ≥75, 2 at 50, 43 at 25–49, 34 at 0–24.
-- `README.md`: updated score distribution line with exact stats (mean 28, median 27, distribution breakdown).
+- `access_quality_scorer.py`: added `SCORER_VERSION = "1.0"`; `calculate_score` now emits
+  `"scorer_version": SCORER_VERSION` in its result.
+- New `rescore.py`: `rescore_stored_results()` loads `outputs/final_access_results.json` and
+  recomputes each row's `access_quality` from its STORED extraction dicts via the current scorer
+  (no LLM, no PDF parse), writing the JSON back.
+- Ran `python rescore.py` then `python result_formatter.py` to regenerate
+  `outputs/final_access_results.{json,csv,xlsx}`.
+- `README.md`: refreshed the score-distribution line to the regenerated numbers and added a
+  reproducibility note.
+**Verification (before → after re-score):** max `70 → 50`; count `>50` `1 → 0`; legacy-schema rows
+`1 → 0`; `scorer_version=="1.0"` on all 79; the stale `377585-4984547.pdf/STELARA` row `70 → 25`
+with a dict breakdown. **Regenerated CSV:** 79 rows; header `==` Submissions tab exactly; **0 blank
+cells**; **0 sentinel cells**; formerly-leaked `287728-4459856.pdf/STELARA` Age `== "NA"`;
+phototherapy header hyphenated; `Quantity Limits` before `Specialist Types`; score range 7–50.
+New stats: min 7 / max 50 / mean 27.8 / median 27; categories 34 Highly Restricted, 43 Restricted,
+2 FDA Parity. `py_compile` OK.
+**Notes:** This regeneration is the single point where the P0-1/P0-2/P0-4/P1-6 fixes land in the
+shipped CSV/XLSX. The forward-fix tasks (P1-9 etc.) affect only future full runs.

@@ -1,5 +1,4 @@
 import json
-import logging
 import time
 import pandas as pd
 import os
@@ -241,26 +240,30 @@ def main():
                 "access_quality": access_score_result
             }
 
-            # Skip checkpointing if any extractor flagged an error —
-            # the row will be retried on the next run.
-            sub_keys = [
-                "age", "step_therapy", "authorization",
-                "utilization_management", "clinical_access",
-            ]
-            has_error = any(
-                final_result.get(k, {}).get("extraction_error")
-                for k in sub_keys
-            )
-            if has_error:
-                logging.warning(
-                    "[BATCH] Skipping checkpoint for %s / %s — "
-                    "one or more extractors reported an error; "
-                    "row will be retried on next run.",
-                    brand, test["filename"]
+            # -------------------------------------------------
+            # DO NOT CHECKPOINT FAILED EXTRACTIONS
+            # If any extractor flagged an error, the row's values
+            # are unreliable (all-NA). Skipping the checkpoint keeps
+            # the (filename, brand) key OUT of completed_keys so the
+            # next run re-processes it, instead of silently recording
+            # a failed row as "done".
+            # -------------------------------------------------
+            errored = [
+                name for name, sub in (
+                    ("age", age_result),
+                    ("step_therapy", therapy_result),
+                    ("authorization", authorization_result),
+                    ("utilization_management", utilization_result),
+                    ("clinical_access", clinical_access_result),
                 )
+                if isinstance(sub, dict) and sub.get("extraction_error")
+            ]
+
+            if errored:
                 print(
-                    f"[SKIP CHECKPOINT] {brand} | {test['filename']} "
-                    f"— extraction error; will retry next run"
+                    f"[SKIP CHECKPOINT] {brand} | {test['filename']} — "
+                    f"extractor error(s): {', '.join(errored)}. "
+                    f"Row not saved; will retry on next run."
                 )
                 continue
 

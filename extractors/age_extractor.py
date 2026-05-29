@@ -1,7 +1,9 @@
 import re
 import json
 import logging
-from utils.model_router import get_router
+from utils.model_router import (
+    get_router
+)
 from utils.extractor_utils import (
     clean_json_output,
     write_debug_context,
@@ -75,7 +77,9 @@ class AgeExtractor:
             "FDA-approved indication"
         ]
 
-        self.model_router = get_router()
+        self.model_router = (
+            get_router()
+        )
 
     # =====================================================
     # PAGE SCORING
@@ -328,6 +332,10 @@ Where:
 
             if len(top_pages) == 0:
 
+                # No brand match -> emit the standard missing-value token
+                # ("NA"), never an internal sentinel, so the value is valid
+                # for the graded Age column. The brand-not-found detail is
+                # preserved in `reasoning` for debugging.
                 return {
                     "parameter": "Age",
                     "brand": brand,
@@ -412,18 +420,19 @@ Where:
         except Exception as e:
 
             logging.warning(
-                "[AgeExtractor] extraction failed for brand=%s pdf=%s: %s",
-                brand, pdf_name, e, exc_info=True
+                "Age extraction failed for %s / %s: %s",
+                brand, pdf_name, e
             )
+
             return {
                 "parameter": "Age",
                 "brand": brand,
                 "value": None,
                 "source_statement": None,
                 "reasoning": str(e),
-                "confidence": 0,
-                "retrieved_pages": [],
                 "extraction_error": True,
+                "confidence": 0,
+                "retrieved_pages": []
             }
 
 
