@@ -604,12 +604,9 @@ class ClinicalAccessExtractor:
 
 if __name__ == "__main__":
 
-    from utils.document_processor import DocumentProcessor
-
     extractor = (
         ClinicalAccessExtractor()
     )
-    document_processor = DocumentProcessor()
 
     test_cases = [
 
@@ -620,6 +617,9 @@ if __name__ == "__main__":
     ]
 
     BASE_FOLDER = "Sample_PsO_ADS_Track"
+
+    from utils.document_processor import DocumentProcessor
+    processor = DocumentProcessor()
 
     all_results = []
 
@@ -641,7 +641,7 @@ if __name__ == "__main__":
 
         try:
 
-            pages = document_processor.process_pdf(pdf_path)
+            pages = processor.process_pdf(pdf_path)
 
             result = extractor.extract(
 
@@ -649,7 +649,7 @@ if __name__ == "__main__":
 
                 brand=brand,
 
-                pdf_name=pdf_path
+                pdf_name=test['pdf']
             )
 
             all_results.append(result)
