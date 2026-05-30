@@ -17,6 +17,9 @@ from flask import (
     send_file,
 )
 
+from collections import Counter
+from statistics import median
+
 from access_quality_scorer import AccessQualityScorer
 from pipeline_runner import run_pipeline
 from result_formatter import flatten_result, SUBMISSION_COLUMNS
@@ -229,6 +232,202 @@ def download_results():
         as_attachment=True,
         download_name="results.csv",
     )
+
+
+@app.route("/download/batch-results")
+def download_batch_results():
+    """Serve outputs/final_access_results.csv as a file download."""
+    path = "outputs/final_access_results.csv"
+    if not os.path.exists(path):
+        return jsonify({"error": "No batch results yet — run the pipeline first."}), 404
+    return send_file(
+        os.path.abspath(path),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="final_access_results.csv",
+    )
+
+
+# =========================================================
+# DASHBOARD
+# =========================================================
+
+BATCH_JSON = "outputs/final_access_results.json"
+
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
+
+@app.route("/api/dashboard-data")
+def dashboard_data():
+    """
+    Compute summary statistics from the batch JSON and return as
+    a single JSON payload consumed by the dashboard charts.
+    """
+    if not os.path.exists(BATCH_JSON):
+        return jsonify({}), 200
+
+    with open(BATCH_JSON, "r", encoding="utf-8") as f:
+        results = json.load(f)
+
+    if not results:
+        return jsonify({}), 200
+
+    # ------ scores + categories ------
+    scores = []
+    categories = []
+    alignments = []
+    entries = []  # (filename, brand, score, category)
+
+    # ------ restriction counters ------
+    brand_step_counts = []
+    generic_step_counts = []
+    n_brand_steps = 0
+    n_generic_steps = 0
+    n_phototherapy = 0
+    n_tb = 0
+    n_specialist = 0
+    n_ql = 0
+    n_reauth = 0
+
+    # ------ per-brand accumulators ------
+    brand_scores = {}  # brand -> [scores]
+
+    for r in results:
+        aq = r.get("access_quality", {})
+        score = aq.get("access_quality_score")
+        if score is None:
+            continue
+
+        cat = aq.get("access_category", "Unknown")
+        align = aq.get("fda_alignment", "Unknown")
+        brand = r.get("brand", "?")
+        fname = r.get("filename", "?")
+
+        scores.append(score)
+        categories.append(cat)
+        alignments.append(align)
+        entries.append({
+            "filename": fname,
+            "brand": brand,
+            "score": score,
+            "category": cat,
+        })
+
+        # Per-brand
+        brand_scores.setdefault(brand, []).append(score)
+
+        # Step therapy
+        st = r.get("step_therapy", {})
+        bs = st.get("brand_steps")
+        gs = st.get("generic_steps")
+        photo = st.get("phototherapy_required")
+
+        if bs is not None and str(bs).upper() != "NA":
+            brand_step_counts.append(int(bs))
+            if int(bs) > 0:
+                n_brand_steps += 1
+        else:
+            brand_step_counts.append("NA")
+
+        if gs is not None and str(gs).upper() != "NA":
+            generic_step_counts.append(int(gs))
+            if int(gs) > 0:
+                n_generic_steps += 1
+        else:
+            generic_step_counts.append("NA")
+
+        if str(photo).strip().lower() == "yes":
+            n_phototherapy += 1
+
+        # Clinical access
+        ca = r.get("clinical_access", {})
+        if str(ca.get("tb_test_required", "")).strip().lower() == "yes":
+            n_tb += 1
+        spec = ca.get("specialist_types", [])
+        if isinstance(spec, list) and len(spec) > 0:
+            n_specialist += 1
+        elif isinstance(spec, str) and spec.upper() not in ("NA", ""):
+            n_specialist += 1
+
+        # Utilization
+        um = r.get("utilization_management", {})
+        ql = um.get("quantity_limits")
+        if isinstance(ql, list) and len(ql) > 0:
+            n_ql += 1
+        elif isinstance(ql, str) and ql.upper() not in ("NA", "", "NO"):
+            n_ql += 1
+
+        # Reauth
+        auth = r.get("authorization", {})
+        reauth = str(auth.get("reauthorization_required", "")).strip().lower()
+        reauth_dur = auth.get("reauthorization_duration_months")
+        reauth_reqs = auth.get("reauthorization_requirements", [])
+        has_reauth = (
+            reauth == "yes"
+            or (reauth_dur is not None and str(reauth_dur).upper() not in ("NA", ""))
+            or (isinstance(reauth_reqs, list) and len(reauth_reqs) > 0)
+        )
+        if has_reauth:
+            n_reauth += 1
+
+    total = len(scores)
+    if total == 0:
+        return jsonify({}), 200
+
+    # ------ brand stats ------
+    brand_stats = {}
+    for b, sc_list in brand_scores.items():
+        brand_stats[b] = {
+            "avg": round(sum(sc_list) / len(sc_list), 1),
+            "count": len(sc_list),
+            "min": min(sc_list),
+            "max": max(sc_list),
+        }
+
+    # ------ step distribution ------
+    # Keys are strings throughout ("0","1","2","3","NA") so JSON
+    # serialization never compares str vs int during key sorting.
+    def count_steps(lst):
+        out = {}
+        for v in lst:
+            key = str(v)
+            out[key] = out.get(key, 0) + 1
+        return out
+
+    # ------ sort entries for tables ------
+    sorted_entries = sorted(entries, key=lambda e: e["score"], reverse=True)
+
+    payload = {
+        "total": total,
+        "avg_score": round(sum(scores) / total, 1),
+        "median_score": median(scores),
+        "min_score": min(scores),
+        "max_score": max(scores),
+        "scores": scores,
+        "categories": dict(Counter(categories)),
+        "fda_alignment": dict(Counter(alignments)),
+        "brand_stats": brand_stats,
+        "restrictions": {
+            "brand_steps": n_brand_steps,
+            "generic_steps": n_generic_steps,
+            "phototherapy": n_phototherapy,
+            "tb_test": n_tb,
+            "specialist": n_specialist,
+            "quantity_limits": n_ql,
+            "reauth": n_reauth,
+        },
+        "step_distribution": {
+            "brand": count_steps(brand_step_counts),
+            "generic": count_steps(generic_step_counts),
+        },
+        "top_policies": sorted_entries[:10],
+        "bottom_policies": sorted_entries[-10:][::-1],
+    }
+
+    return jsonify(payload)
 
 
 # =========================================================

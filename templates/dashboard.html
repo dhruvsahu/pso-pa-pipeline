@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — PsO PA Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fadeInUp 0.35s ease forwards; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+<!-- ======================================================
+     TOP NAV
+====================================================== -->
+<nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
+        <div class="flex items-center gap-3">
+            <div class="inline-flex items-center gap-2 text-indigo-400 text-xs font-medium tracking-wide">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                PsO PA Intelligence Platform
+            </div>
+        </div>
+        <div class="flex items-center gap-1">
+            <a href="/"
+               class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                Analyzer
+            </a>
+            <a href="/dashboard"
+               class="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-slate-800 transition-all">
+                Dashboard
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- ======================================================
+     HEADER
+====================================================== -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4">
+    <div class="flex items-end justify-between mb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">Access Quality Dashboard</h1>
+            <p class="text-slate-500 text-sm mt-1">
+                Batch analysis of <span class="text-slate-300 font-medium" id="total-count">—</span> PA policies
+                &middot; Scorer v2.2
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/download/batch-results"
+               class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Export CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================
+     KPI CARDS
+====================================================== -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3" id="kpi-row">
+        <!-- Filled by JS -->
+    </div>
+</div>
+
+<!-- ======================================================
+     CHARTS — ROW 1
+====================================================== -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- Score Distribution -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5 lg:col-span-2">
+            <h3 class="text-sm font-semibold text-white mb-4">Score Distribution</h3>
+            <div class="h-64">
+                <canvas id="chart-histogram"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4">Category Breakdown</h3>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="chart-category"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ======================================================
+     CHARTS — ROW 2
+====================================================== -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Score by Brand -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4">Average Score by Brand</h3>
+            <div class="h-80">
+                <canvas id="chart-brand"></canvas>
+            </div>
+        </div>
+
+        <!-- Restriction Prevalence -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4">Restriction Prevalence</h3>
+            <div class="h-80">
+                <canvas id="chart-restrictions"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ======================================================
+     CHARTS — ROW 3
+====================================================== -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Step Therapy Breakdown -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4">Step Therapy Counts</h3>
+            <div class="h-64">
+                <canvas id="chart-steps"></canvas>
+            </div>
+        </div>
+
+        <!-- FDA Alignment -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4">FDA Alignment</h3>
+            <div class="h-64">
+                <canvas id="chart-alignment"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ======================================================
+     TABLE — TOP / BOTTOM POLICIES
+====================================================== -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 mb-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Top scoring -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                Highest Access Scores
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-slate-500 border-b border-slate-800">
+                            <th class="text-left py-2 px-2 font-medium">Filename</th>
+                            <th class="text-left py-2 px-2 font-medium">Brand</th>
+                            <th class="text-right py-2 px-2 font-medium">Score</th>
+                            <th class="text-left py-2 px-2 font-medium">Category</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bottom scoring -->
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                Lowest Access Scores
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-slate-500 border-b border-slate-800">
+                            <th class="text-left py-2 px-2 font-medium">Filename</th>
+                            <th class="text-left py-2 px-2 font-medium">Brand</th>
+                            <th class="text-right py-2 px-2 font-medium">Score</th>
+                            <th class="text-left py-2 px-2 font-medium">Category</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bottom-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ======================================================
+     NO-DATA OVERLAY (hidden when data loads)
+====================================================== -->
+<div id="no-data-overlay" class="hidden fixed inset-0 bg-slate-950/95 z-40 flex items-center justify-center">
+    <div class="text-center">
+        <div class="text-4xl mb-4">📊</div>
+        <h2 class="text-xl font-bold text-white mb-2">No Batch Results Found</h2>
+        <p class="text-slate-400 text-sm max-w-sm mb-6">
+            Run the full pipeline first to generate results, then come back here to explore the data.
+        </p>
+        <code class="text-xs text-indigo-400 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 inline-block">
+            python run_full_pipeline.py
+        </code>
+    </div>
+</div>
+
+
+<!-- ======================================================
+     JAVASCRIPT
+====================================================== -->
+<script>
+
+// --------------------------------------------------------
+// CHART.JS GLOBAL DEFAULTS
+// --------------------------------------------------------
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(51,65,85,0.5)';
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.padding = 16;
+
+const COLORS = {
+    indigo:  'rgb(99,102,241)',
+    emerald: 'rgb(16,185,129)',
+    amber:   'rgb(245,158,11)',
+    orange:  'rgb(249,115,22)',
+    red:     'rgb(239,68,68)',
+    sky:     'rgb(14,165,233)',
+    violet:  'rgb(139,92,246)',
+    pink:    'rgb(236,72,153)',
+    slate:   'rgb(100,116,139)',
+};
+
+const CAT_COLORS = {
+    'Highly Restricted': COLORS.red,
+    'Restricted Access': COLORS.orange,
+    'FDA Parity':        COLORS.amber,
+    'Preferred Access':  COLORS.emerald,
+};
+
+const CAT_BG = {
+    'Highly Restricted': 'rgba(239,68,68,0.15)',
+    'Restricted Access': 'rgba(249,115,22,0.15)',
+    'FDA Parity':        'rgba(245,158,11,0.15)',
+    'Preferred Access':  'rgba(16,185,129,0.15)',
+};
+
+// --------------------------------------------------------
+// LOAD DATA
+// --------------------------------------------------------
+fetch('/api/dashboard-data')
+    .then(r => r.json())
+    .then(data => {
+        if (!data || !data.total || data.total === 0) {
+            document.getElementById('no-data-overlay').classList.remove('hidden');
+            return;
+        }
+        renderKPIs(data);
+        renderHistogram(data);
+        renderCategoryDonut(data);
+        renderBrandChart(data);
+        renderRestrictions(data);
+        renderStepChart(data);
+        renderAlignmentChart(data);
+        renderTables(data);
+    })
+    .catch(() => {
+        document.getElementById('no-data-overlay').classList.remove('hidden');
+    });
+
+// --------------------------------------------------------
+// KPI CARDS
+// --------------------------------------------------------
+function renderKPIs(data) {
+    document.getElementById('total-count').textContent = data.total;
+
+    const kpis = [
+        { label: 'Total Policies',    value: data.total,                    color: 'text-white' },
+        { label: 'Average Score',     value: data.avg_score.toFixed(1),     color: 'text-indigo-400' },
+        { label: 'Median Score',      value: data.median_score,             color: 'text-indigo-400' },
+        { label: 'Score Range',       value: `${data.min_score}–${data.max_score}`, color: 'text-slate-300' },
+        { label: 'Highly Restricted', value: data.categories['Highly Restricted'] || 0, color: 'text-red-400' },
+        { label: 'FDA Parity',        value: data.categories['FDA Parity'] || 0,        color: 'text-amber-400' },
+    ];
+
+    document.getElementById('kpi-row').innerHTML = kpis.map(k => `
+        <div class="bg-slate-900 border border-slate-700/60 rounded-xl px-4 py-3 fade-in-up">
+            <p class="text-xs text-slate-500 mb-1">${k.label}</p>
+            <p class="text-xl font-bold ${k.color}">${k.value}</p>
+        </div>
+    `).join('');
+}
+
+// --------------------------------------------------------
+// HISTOGRAM
+// --------------------------------------------------------
+function renderHistogram(data) {
+    const scores = data.scores;
+    // Create bins: 0-9, 10-19, ..., 90-100
+    const bins = Array(10).fill(0);
+    const binLabels = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
+    scores.forEach(s => {
+        const idx = Math.min(Math.floor(s / 10), 9);
+        bins[idx]++;
+    });
+
+    // Color each bin by category
+    const binColors = binLabels.map((_, i) => {
+        const mid = i * 10 + 5;
+        if (mid >= 75) return COLORS.emerald;
+        if (mid >= 50) return COLORS.amber;
+        if (mid >= 25) return COLORS.orange;
+        return COLORS.red;
+    });
+
+    new Chart(document.getElementById('chart-histogram'), {
+        type: 'bar',
+        data: {
+            labels: binLabels,
+            datasets: [{
+                data: bins,
+                backgroundColor: binColors.map(c => c.replace('rgb', 'rgba').replace(')', ',0.7)')),
+                borderColor: binColors,
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false },
+                       tooltip: { callbacks: { title: ctx => `Score ${ctx[0].label}`, label: ctx => `${ctx.raw} policies` }}},
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Policies' }, ticks: { stepSize: 5 }, grid: { color: 'rgba(51,65,85,0.3)' }},
+                x: { title: { display: true, text: 'Access Score Range' }, grid: { display: false }}
+            }
+        }
+    });
+}
+
+// --------------------------------------------------------
+// CATEGORY DONUT
+// --------------------------------------------------------
+function renderCategoryDonut(data) {
+    const cats = ['Highly Restricted', 'Restricted Access', 'FDA Parity', 'Preferred Access'];
+    const vals = cats.map(c => data.categories[c] || 0);
+    const colors = cats.map(c => CAT_COLORS[c]);
+
+    new Chart(document.getElementById('chart-category'), {
+        type: 'doughnut',
+        data: {
+            labels: cats,
+            datasets: [{
+                data: vals,
+                backgroundColor: colors.map(c => c.replace('rgb', 'rgba').replace(')', ',0.75)')),
+                borderColor: colors,
+                borderWidth: 2,
+                hoverOffset: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' }},
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${((ctx.raw/data.total)*100).toFixed(0)}%)` }}
+            }
+        }
+    });
+}
+
+// --------------------------------------------------------
+// BRAND CHART
+// --------------------------------------------------------
+function renderBrandChart(data) {
+    const brands = Object.keys(data.brand_stats).sort((a, b) => data.brand_stats[b].avg - data.brand_stats[a].avg);
+    const avgs = brands.map(b => data.brand_stats[b].avg);
+    const counts = brands.map(b => data.brand_stats[b].count);
+
+    const barColors = avgs.map(v => {
+        if (v >= 75) return COLORS.emerald;
+        if (v >= 50) return COLORS.amber;
+        if (v >= 25) return COLORS.orange;
+        return COLORS.red;
+    });
+
+    new Chart(document.getElementById('chart-brand'), {
+        type: 'bar',
+        data: {
+            labels: brands,
+            datasets: [{
+                label: 'Avg Score',
+                data: avgs,
+                backgroundColor: barColors.map(c => c.replace('rgb', 'rgba').replace(')', ',0.65)')),
+                borderColor: barColors,
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `Avg: ${ctx.raw.toFixed(1)}  (n=${counts[ctx.dataIndex]})` }}
+            },
+            scales: {
+                x: { beginAtZero: true, max: 70, title: { display: true, text: 'Average Access Score' }, grid: { color: 'rgba(51,65,85,0.3)' }},
+                y: { grid: { display: false }, ticks: { font: { size: 10 } }}
+            }
+        }
+    });
+}
+
+// --------------------------------------------------------
+// RESTRICTION PREVALENCE
+// --------------------------------------------------------
+function renderRestrictions(data) {
+    const r = data.restrictions;
+    const labels = [
+        'Brand Step\nTherapy',
+        'Generic Step\nTherapy',
+        'Phototherapy\nRequired',
+        'TB Test\nRequired',
+        'Specialist\nRestriction',
+        'Quantity\nLimits',
+        'Reauth\nRequired',
+    ];
+    const vals = [
+        r.brand_steps, r.generic_steps, r.phototherapy,
+        r.tb_test, r.specialist, r.quantity_limits, r.reauth,
+    ];
+    const pcts = vals.map(v => ((v / data.total) * 100).toFixed(0));
+
+    new Chart(document.getElementById('chart-restrictions'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Policies with restriction',
+                data: vals,
+                backgroundColor: 'rgba(99,102,241,0.55)',
+                borderColor: COLORS.indigo,
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${ctx.raw} policies (${pcts[ctx.dataIndex]}%)` }}
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Policies' }, grid: { color: 'rgba(51,65,85,0.3)' }},
+                x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 }}
+            }
+        }
+    });
+}
+
+// --------------------------------------------------------
+// STEP THERAPY COUNTS
+// --------------------------------------------------------
+function renderStepChart(data) {
+    const s = data.step_distribution;
+    const labels = ['0 steps', '1 step', '2 steps', '3 steps', 'NA'];
+
+    new Chart(document.getElementById('chart-steps'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Brand Steps',
+                    data: [s.brand['0']||0, s.brand['1']||0, s.brand['2']||0, s.brand['3']||0, s.brand['NA']||0],
+                    backgroundColor: 'rgba(236,72,153,0.55)',
+                    borderColor: COLORS.pink,
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Generic Steps',
+                    data: [s.generic['0']||0, s.generic['1']||0, s.generic['2']||0, s.generic['3']||0, s.generic['NA']||0],
+                    backgroundColor: 'rgba(14,165,233,0.55)',
+                    borderColor: COLORS.sky,
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle' }},
+                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw} policies` }}
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Policies' }, grid: { color: 'rgba(51,65,85,0.3)' }},
+                x: { grid: { display: false }}
+            }
+        }
+    });
+}
+
+// --------------------------------------------------------
+// FDA ALIGNMENT
+// --------------------------------------------------------
+function renderAlignmentChart(data) {
+    const a = data.fda_alignment;
+    const labels = Object.keys(a);
+    const vals = Object.values(a);
+
+    const alignColors = labels.map(l => {
+        if (l.includes('Favorable')) return COLORS.emerald;
+        if (l.includes('Near') || l.includes('parity')) return COLORS.amber;
+        return COLORS.red;
+    });
+
+    new Chart(document.getElementById('chart-alignment'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: vals,
+                backgroundColor: alignColors.map(c => c.replace('rgb', 'rgba').replace(')', ',0.7)')),
+                borderColor: alignColors,
+                borderWidth: 2,
+                hoverOffset: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' }},
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${((ctx.raw/data.total)*100).toFixed(0)}%)` }}
+            }
+        }
+    });
+}
+
+// --------------------------------------------------------
+// TOP / BOTTOM TABLES
+// --------------------------------------------------------
+function renderTables(data) {
+    const catBadge = cat => {
+        const cls = {
+            'Preferred Access':  'text-emerald-400 bg-emerald-500/10',
+            'FDA Parity':        'text-amber-400 bg-amber-500/10',
+            'Restricted Access': 'text-orange-400 bg-orange-500/10',
+            'Highly Restricted': 'text-red-400 bg-red-500/10',
+        }[cat] || 'text-slate-400 bg-slate-700';
+        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${cls}">${cat}</span>`;
+    };
+
+    const row = r => `
+        <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
+            <td class="py-2 px-2 text-slate-300 font-mono">${r.filename}</td>
+            <td class="py-2 px-2 text-slate-400">${r.brand}</td>
+            <td class="py-2 px-2 text-right font-semibold text-white">${r.score}</td>
+            <td class="py-2 px-2">${catBadge(r.category)}</td>
+        </tr>`;
+
+    document.getElementById('top-table').innerHTML = data.top_policies.map(row).join('');
+    document.getElementById('bottom-table').innerHTML = data.bottom_policies.map(row).join('');
+}
+
+</script>
+</body>
+</html>
