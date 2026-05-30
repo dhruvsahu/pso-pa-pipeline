@@ -59,6 +59,23 @@ SUBMISSION_COLUMNS = [
 
 
 # =========================================================
+# REAUTHORIZATION-REQUIRED DERIVATION
+# Business rule: this column is Yes/No (never "NA"). "Yes" if the policy
+# states reauthorization is required, OR gives a reauth duration, OR
+# documents reauth requirements; otherwise "No".
+# =========================================================
+
+def derive_reauth_required(reauth_required, reauth_dur, reauth_reqs):
+    explicit_yes = str(reauth_required).strip().lower() == "yes"
+    dur_present = (
+        reauth_dur is not None
+        and str(reauth_dur).strip().upper() not in ("NA", "")
+    )
+    reqs_present = isinstance(reauth_reqs, list) and len(reauth_reqs) > 0
+    return "Yes" if (explicit_yes or dur_present or reqs_present) else "No"
+
+
+# =========================================================
 # FLATTEN HELPER — reusable by app.py for single-result CSV
 # =========================================================
 
@@ -97,7 +114,11 @@ def flatten_result(result):
         "Reauthorization Duration(in-months)":
             "NA" if reauth_dur is None else str(int(reauth_dur)) if isinstance(reauth_dur, float) else str(reauth_dur),
         "Reauthorization Required":
-            result.get("authorization", {}).get("reauthorization_required"),
+            derive_reauth_required(
+                result.get("authorization", {}).get("reauthorization_required"),
+                reauth_dur,
+                reauth_reqs,
+            ),
         "Reauthorization Requirements Documented in Policy":
             join_or_na(reauth_reqs),
         "Access Score":
