@@ -47,6 +47,10 @@ class DocumentProcessor:
             text
         )
 
+        # Note: a previous `\n{3,} → \n\n` pass was removed here — it was
+        # unreachable, since the first substitution above already collapses
+        # every run of blank lines to a single '\n'.
+
         return text.strip()
 
     # =====================================================
@@ -58,13 +62,11 @@ class DocumentProcessor:
         pdf_path
     ):
 
-        pages = []
-
-        # Context manager ensures the native C-level file
-        # handle and memory-mapped pages are released
-        # immediately after extraction, preventing resource
-        # leaks across the 79-PDF batch run (P2-11 fix).
+        # Context manager ensures the native PyMuPDF handle is released
+        # even if parsing raises — important across the 79-PDF batch.
         with fitz.open(pdf_path) as doc:
+
+            pages = []
 
             for i in range(len(doc)):
 
