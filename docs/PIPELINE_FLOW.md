@@ -30,7 +30,7 @@ DocumentProcessor  (PDF → Pages, PyMuPDF)     DocumentProcessor
   └─────────────────────────────────┘
       │                                            │
       ▼                                            ▼
-  AccessQualityScorer (v1.0)                  append to outputs/results.csv
+  AccessQualityScorer (v2.2)                  append to outputs/results.csv
       │                                       (Download Results button)
       ▼
   result_formatter.py ── final_access_results.csv / .xlsx
@@ -232,12 +232,16 @@ Compares all extractor outputs against `assets/fda_baselines.csv` (FDA prescribi
 Score is clamped to [0, 100].
 
 **Access categories:**
-- 75–100: Preferred Access
-- 50–75: FDA Parity
-- 25–50: Restricted Access
-- 0–25: Highly Restricted
+- `[75,100]`: Preferred Access *(not reachable for this dataset — ceiling ~68; see ADR-016)*
+- `[50,75)`: FDA Parity
+- `[25,50)`: Restricted Access
+- `[0,25)`: Highly Restricted
 
-**Observed range across 79 policies (scorer v1.0): 7–50, average 27.8, median 27** — consistent with real-world PA policies universally adding restrictions beyond FDA label. Reproducible via `python rescore.py` + `python result_formatter.py`.
+A small **+2 confirmed-open credit** is added per axis the policy *verifies* is unrestricted
+(explicit "No" / empty list / confirmed 0) — never on "NA" — so 50 is the neutral/unknown baseline
+and a verified-open policy sits slightly above it.
+
+**Observed range across 79 policies (scorer v2.2): 9–50, average 29.7, median 29** — consistent with real-world PA policies universally adding restrictions beyond FDA label. No policy scores above 50; the 75/100 anchors are not reachable from the extracted parameters (Option A — see ADR-016). Reproducible via `python rescore.py` + `python result_formatter.py`.
 
 ---
 
