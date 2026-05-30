@@ -444,11 +444,10 @@ if __name__ == "__main__":
 
     from utils.document_processor import DocumentProcessor
 
-    extractor = AgeExtractor()
-    document_processor = DocumentProcessor()
-
     pdf_path = "Sample_PsO_ADS_Track/148593-4960549.pdf"
-    pages = document_processor.process_pdf(pdf_path)
+
+    extractor = AgeExtractor()
+    pages = DocumentProcessor().process_pdf(pdf_path)
 
     result = extractor.extract(
         pages=pages,
