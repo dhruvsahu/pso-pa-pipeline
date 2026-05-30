@@ -6,32 +6,35 @@
 ## Overview
 
 ```
-sample_batch.csv
-      │
-      ▼
-run_full_pipeline.py  ──── checkpoint ──── outputs/final_access_results.json
-      │                                              │
-      ▼                                              ▼
-DocumentProcessor                          result_formatter.py
-  (PDF → Pages)                                      │
-      │                                              ▼
-      ▼                              final_access_results.csv / .xlsx
-  5 Extractors
-  ┌─────────────────────────────────┐
-  │ AgeExtractor                    │
+BATCH PATH                                    UI PATH
+──────────                                    ───────
+sample_batch.csv                              app.py (Flask, localhost:5000)
+      │                                            │
+      ▼                                            ▼
+run_full_pipeline.py                          pipeline_runner.py (SSE)
+      │                                            │
+      ├── checkpoint ── outputs/                   │
+      │                 final_access_results.json   │
+      │                                            │
+      ▼                                            ▼
+DocumentProcessor  (PDF → Pages, PyMuPDF)     DocumentProcessor
+      │                                            │
+      ▼                                            ▼
+  5 Extractors  ◄── get_router() ──►  ModelRouter (singleton)
+  ┌─────────────────────────────────┐    (Gemini / Groq / Ollama)
+  │ AgeExtractor                    │    Thread-safe throttlers
   │ StepTherapyExtractor            │
   │ AuthorizationExtractor          │
   │ UtilizationManagementExtractor  │
   │ ClinicalAccessExtractor         │
   └─────────────────────────────────┘
-      │
+      │                                            │
+      ▼                                            ▼
+  AccessQualityScorer (v1.0)                  append to outputs/results.csv
+      │                                       (Download Results button)
       ▼
-  ModelRouter
-  (Gemini / Groq / Ollama)
-      │
-      ▼
-  AccessQualityScorer
-  (score + category)
+  result_formatter.py ── final_access_results.csv / .xlsx
+  rescore.py ── re-score from stored JSON (no LLM)
 ```
 
 ---
@@ -67,11 +70,12 @@ Entry point for the full batch run (`python run_full_pipeline.py`).
 1. Verifies the PDF file exists in `Sample_PsO_ADS_Track/`
 2. Runs `DocumentProcessor` → pages
 3. Runs all 5 extractors sequentially
-4. Runs `AccessQualityScorer`
+4. Runs `AccessQualityScorer` (stamps `scorer_version` per row)
 5. Combines all results into one dict
-6. **Appends to JSON and saves to disk immediately** (checkpoint after every drug)
+6. Checks for `extraction_error` in any sub-result — if found, **skips checkpointing** (row retries on next run)
+7. Otherwise **appends to JSON and saves to disk immediately** (checkpoint after every drug)
 
-This means a crash or rate-limit error loses at most one drug's worth of work.
+This means a crash or rate-limit error loses at most one drug's worth of work, and extractor failures auto-retry.
 
 ---
 
@@ -82,7 +86,7 @@ pages = processor.process_pdf(pdf_path)
 # Returns: [{"page_number": 1, "text": "..."}, ...]
 ```
 
-- Reads the PDF using `pdfplumber`
+- Reads the PDF using PyMuPDF (`fitz`) with a context manager to prevent file handle leaks
 - Returns one dict per page with `page_number` and extracted `text`
 - Page-level granularity is essential — all extractor retrieval logic operates on individual pages
 
@@ -138,6 +142,7 @@ pages + brand
 - **Finds:** How long the initial authorization lasts, whether reauthorization is required, and its criteria
 - **Keywords:** `"prior authorization"`, `"renewal"`, `"reauthorization"`, `"continued therapy"`, etc.
 - **Output:** `{"initial_authorization_months": 12, "reauthorization_required": "Yes", "reauthorization_duration_months": 12, "reauthorization_requirements": [...]}`
+- **Semantics:** When an authorization section exists but no month count is stated, `initial_authorization_months` is coerced to `"Unspecified"` (not `"NA"` — that is reserved for "no authorization section found")
 
 ### `UtilizationManagementExtractor`
 - **Finds:** Quantity limits on the target brand
@@ -148,31 +153,39 @@ pages + brand
 - **Finds:** TB test requirements, specialist restrictions, precertification requirements
 - **Keywords:** `"tuberculosis"`, `"latent tb"`, `"dermatologist"`, `"prescriber specialties"`, etc.
 - **Output:** `{"tb_test_required": "Yes/No/NA", "specialist_types": ["dermatologist"] or "NA", "precertification_required": "Yes/No/NA"}`
+- **TB semantics:** When criteria are found but TB is not mentioned, the answer is `"No"` (not required), not `"NA"`. `"NA"` is returned only when no clinical access context is found at all.
+
+**Error handling:** All five extractors catch exceptions and return a fallback dict with `"extraction_error": True`. The batch runner checks for this flag and **skips checkpointing** errored rows so they are retried on the next run.
 
 ---
 
 ## Step 5 — Model Router: `ModelRouter`
 
-All extractors call `model_router.generate(prompt, context)` — they are unaware of which LLM is active.
+All extractors obtain the shared router via `get_router()` (process-wide singleton, double-checked lock) and call `model_router.generate(prompt, context)` — they are unaware of which LLM is active.
 
 ```
-model_router.generate(prompt, context)
+get_router()  →  shared ModelRouter instance (singleton)
      │
-     ├── select_model(context)  → "gemini" / "groq" / "ollama"
-     │
-     ├── [if Gemini] _gemini_throttle()
-     │     Rolling 60s deque of request timestamps.
-     │     Sleep only if ≥12 requests in last 60s (80% of 15 RPM limit).
-     │
-     └── generate() → raw LLM text response
+     model_router.generate(prompt, context)
+          │
+          ├── [if Groq]   _groq_throttle(estimated_tokens)
+          │     Rolling 60s deque of (timestamp, tokens, uid).
+          │     Sleep if adding tokens would exceed 90% of 12K TPM.
+          │     Returns uid → _groq_record_actual(uid, actual) after call.
+          │
+          ├── [if Gemini]  _gemini_throttle()
+          │     Rolling 60s deque of request timestamps.
+          │     Sleep only if ≥12 requests in last 60s (80% of 15 RPM).
+          │
+          └── generate() → raw LLM text response
 ```
 
-**Backend selection** via `.env`:
-```
-MODEL_PROVIDER=gemini    # development (Gemini Flash Lite)
-MODEL_PROVIDER=groq      # presentation (llama-3.3-70b)
-MODEL_PROVIDER=ollama    # local / offline fallback
-```
+All throttle read-modify-write is guarded by `self._throttle_lock`; the lock is released before sleeping so other threads can make progress.
+
+**Backend auto-selection** via `.env` (priority order):
+- `GROQ_API_KEY` present → Groq (llama-3.3-70b, presentation)
+- `GEMINI_API_KEY` present → Gemini (gemini-3.1-flash-lite, development)
+- Neither → Ollama (local / offline fallback)
 
 **Token budget per call (approximate):**
 - Prompt template: ~7K chars (~1.75K tokens)
@@ -224,7 +237,7 @@ Score is clamped to [0, 100].
 - 25–50: Restricted Access
 - 0–25: Highly Restricted
 
-**Observed range across 79 policies: 7–50, average 28** — consistent with real-world PA policies universally adding restrictions beyond FDA label.
+**Observed range across 79 policies (scorer v1.0): 7–50, average 27.8, median 27** — consistent with real-world PA policies universally adding restrictions beyond FDA label. Reproducible via `python rescore.py` + `python result_formatter.py`.
 
 ---
 
@@ -259,14 +272,17 @@ Flattens the nested JSON into a flat table. Saves two files:
 - `outputs/final_access_results.csv`
 - `outputs/final_access_results.xlsx`
 
-**Output columns:**
+**Output columns** (single source of truth: `SUBMISSION_COLUMNS` in `result_formatter.py`):
 ```
-Filename | Brand | Age | Step Therapy Requirements | Number of Steps through Brands
-Number of Steps through Generic | Step through Phototherapy | TB Test required
-Specialist Types | Quantity Limits | Initial Authorization Duration(in-months)
-Reauthorization Duration(in-months) | Reauthorization Required
-Reauthorization Requirements | Access Score
+Filename | Brand | Age | Step Therapy Requirements Documented in Policy
+Number of Steps through Brands | Number of Steps through Generic
+Step through-Phototherapy | TB Test required | Quantity Limits | Specialist Types
+Initial Authorization Duration(in-months) | Reauthorization Duration(in-months)
+Reauthorization Required | Reauthorization Requirements Documented in Policy
+Access Score
 ```
+
+Note: `Quantity Limits` appears before `Specialist Types` (matches the grading template). The column schema is defined once in `result_formatter.py` and imported by `app.py` so UI and batch output cannot drift apart.
 
 ---
 
@@ -283,12 +299,43 @@ These show exactly which pages were retrieved and in what order — essential fo
 
 ---
 
+## Interactive UI Path
+
+The Flask UI (`python app.py` → http://localhost:5000) provides a single-PDF analysis mode:
+
+```
+Upload PDF + select brand
+     │
+     ▼
+pipeline_runner.py (SSE generator)
+     │  streams results step-by-step
+     ▼
+app.py appends row to outputs/results.csv
+     │
+     ▼
+Download Results button → serves outputs/results.csv
+```
+
+- Each analysis appends one row to `outputs/results.csv` using the same `SUBMISSION_COLUMNS` schema as the batch output
+- Sessions are stored as `(path, created_at, original_name)` tuples guarded by `threading.Lock` with a 600s TTL
+- Temp PDF files are cleaned up after streaming completes or when the session expires
+- The original PDF filename is preserved in the CSV (not "uploaded_pdf")
+
+---
+
 ## Running the Pipeline
 
 ```bash
+# Interactive UI (single PDF at a time)
+python app.py
+# Then open http://localhost:5000 — results accumulate in outputs/results.csv
+
 # Full batch run (resumes from checkpoint automatically)
 python run_full_pipeline.py
 
-# Format results to CSV/Excel after pipeline completes
+# Format batch results to CSV/Excel after pipeline completes
 python result_formatter.py
+
+# Re-score all rows with the current scorer (no LLM calls)
+python rescore.py
 ```

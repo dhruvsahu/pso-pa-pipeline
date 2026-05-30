@@ -21,6 +21,10 @@
 9. [ADR-009 — Brand-Aware Renewal Sweep](#adr-009)
 10. [ADR-010 — Context Window Limit (20K chars)](#adr-010)
 11. [ADR-011 — Internal Sentinels Mapped to "NA" in Output](#adr-011)
+12. [ADR-012 — Extraction Error Flag and Checkpoint Skip](#adr-012)
+13. [ADR-013 — Scorer Version Stamp](#adr-013)
+14. [ADR-014 — TB "No" vs "NA" and Auth "Unspecified" Semantics](#adr-014)
+15. [ADR-015 — Session TTL and Thread-Safe UI State](#adr-015)
 
 ---
 
@@ -97,18 +101,15 @@ Each extractor maintains its own `*_sort_signals` list of tight terms (e.g. `"in
 
 ## ADR-004 — LLM Model Routing {#adr-004}
 
-**Status:** Accepted
+**Status:** Accepted (updated 2026-05-30)
 
 ### Context
 The pipeline needs to support multiple LLM backends: Gemini (cloud, fast, rate-limited), Groq/llama-3.3-70b (cloud, for final presentation), and Ollama (local, unlimited, slower). No single model is optimal for all situations.
 
 ### Decision
-`ModelRouter` in `utils/model_router.py` selects the active backend at runtime via environment variables. All extractors call `model_router.generate(prompt, context)` — they are completely unaware of which model is in use.
+`ModelRouter` in `utils/model_router.py` auto-selects the active backend at startup by checking which API key is present in the environment. All extractors call `model_router.generate(prompt, context)` — they are completely unaware of which model is in use.
 
-Switching backends requires only changing the `.env` file:
-```
-MODEL_PROVIDER=gemini   # or groq, ollama
-```
+Provider priority: `GROQ_API_KEY` present → Groq; else `GEMINI_API_KEY` present → Gemini; else → Ollama (local fallback). Switching backends requires only changing which key is set in `.env`.
 
 ### Rationale
 - Development uses Gemini (fast iteration, free tier)
@@ -123,28 +124,33 @@ MODEL_PROVIDER=gemini   # or groq, ollama
 
 ---
 
-## ADR-005 — Gemini RPM Throttler {#adr-005}
+## ADR-005 — Rolling-Window Rate Throttlers {#adr-005}
 
-**Status:** Accepted
+**Status:** Accepted (updated 2026-05-30 — singleton enforcement, Groq token throttle)
 
 ### Context
-Gemini Flash Lite free tier: 15 RPM, 500 RPD. At 79 PDFs × 5 LLM calls = ~395 calls total. Hardcoded `time.sleep(20)` between calls was used initially but wasted time when requests were well under the rate limit.
+Gemini Flash Lite free tier: 15 RPM, 500 RPD. Groq llama-3.3-70b: 12K TPM. At 79 PDFs × 5 LLM calls = ~395 calls total. Hardcoded `time.sleep(20)` between calls was used initially but wasted time when requests were well under the rate limit.
 
 ### Decision
-Replace all hardcoded sleeps with a rolling-window RPM throttler in `ModelRouter._gemini_throttle()`. A `deque` tracks timestamps of the last N requests. Before each Gemini call:
-1. Evict timestamps older than 60 seconds
-2. If `len(window) < 12` (80% of 15 RPM limit) → proceed immediately
-3. Otherwise sleep until the oldest timestamp expires + 0.5s buffer
+Replace all hardcoded sleeps with rolling-window throttlers in `ModelRouter`:
+
+**Gemini** — `_gemini_throttle()`: a `deque` of request timestamps over the last 60s. Before each call: evict entries older than 60s; if `len(window) < 12` (80% of 15 RPM) proceed; otherwise sleep until the oldest entry ages out + 0.5s.
+
+**Groq** — `_groq_throttle(estimated_tokens)`: a `deque` of `(timestamp, tokens, uid)` tuples over the last 60s. Before each call: evict old entries, sum tokens in window, check headroom against 90% of 12K TPM. Returns a unique `uid`; after the call, `_groq_record_actual(uid, actual_tokens)` replaces the estimate by uid so the window stays accurate under concurrency.
+
+**Singleton enforcement:** `get_router()` (module-level, double-checked lock) guarantees one `ModelRouter` per process. All extractors call `get_router()` instead of constructing their own — previously 5 independent windows gave an effective rate ~5× the target. All throttle read-modify-write runs under `self._throttle_lock`; the lock is released before sleeping so other threads can make progress.
 
 ### Rationale
-- 80% of 15 RPM = 12 RPM target avoids hitting the hard limit
-- Rolling window is more accurate than a fixed-interval sleep
-- No sleep wasted when requests naturally stay under the limit
+- 80% / 90% targets avoid hitting hard limits while maximizing throughput
+- Rolling window is more accurate than fixed-interval sleeps
+- Singleton + lock eliminates the 5× overshoot and data races under Flask `threaded=True`
+- Groq uid-based replacement prevents concurrent calls from corrupting each other's accounting
 
 ### Consequences
 - **Positive:** Maximum throughput within rate limits; no unnecessary sleeping
-- **Positive:** Self-correcting — burst of fast extractions auto-throttles; slow extractions don't sleep at all
-- **Negative:** Shared state across extractor calls means the throttler is only meaningful when `ModelRouter` is a singleton (it is — one instance per pipeline run)
+- **Positive:** Self-correcting — bursts auto-throttle; slow extractions don't sleep
+- **Positive:** Thread-safe under concurrent Flask requests
+- **Negative:** Single lock serializes throttle checks (sub-millisecond; not a bottleneck)
 
 ---
 
@@ -308,6 +314,96 @@ Internal sentinels never appear in output. This is enforced in two layers:
 
 ---
 
+## ADR-012 — Extraction Error Flag and Checkpoint Skip {#adr-012}
+
+**Status:** Accepted
+
+### Context
+All five extractors wrapped their `extract()` method in `except Exception`, returning an all-NA fallback dict. The batch runner could not distinguish a genuine "no data in policy" NA result from a crash (JSON parse failure, network error, KeyError). Crashed rows were checkpointed as completed and never retried.
+
+### Decision
+Each extractor's `except` block now adds `"extraction_error": True` to the fallback dict and logs at `WARNING` level. The batch runner (`run_full_pipeline.py`) checks all five sub-results for this flag; if any is set, the row is **not** checkpointed — leaving it in the retry pool for the next run.
+
+### Rationale
+- Real failures are now visible in logs and distinguishable from legitimate no-data
+- Skipping checkpoint ensures re-runs retry failed rows automatically
+- NA values are still emitted so scoring can proceed (score on partial data is better than no score)
+
+### Consequences
+- **Positive:** Transient errors (rate limits, network timeouts) auto-recover on re-run
+- **Positive:** Logs identify exactly which extractor failed and why
+- **Negative:** A persistently failing extractor (e.g. bad prompt for one brand) will retry indefinitely until the JSON entry is manually added
+
+---
+
+## ADR-013 — Scorer Version Stamp {#adr-013}
+
+**Status:** Accepted
+
+### Context
+A stale checkpoint row (`377585-4984547.pdf / STELARA`) used an older scoring schema (flat prose list, score 70) that was impossible under the current model (brand_steps=2 should score ~25). The checkpoint logic did not detect or invalidate rows from a previous scorer version.
+
+### Decision
+`access_quality_scorer.py` defines `SCORER_VERSION = "1.0"` and stamps it onto every `access_quality` result. A companion `rescore.py` script recomputes all scores from stored extraction dicts using the current scorer — no LLM calls, no PDF parsing.
+
+### Rationale
+- Version stamp makes mixed-schema datasets immediately detectable
+- Deterministic re-score from stored data is fast and safe (< 1 second for 79 rows)
+- Decouples scorer iteration from expensive LLM re-extraction
+
+### Consequences
+- **Positive:** Stale row 70 corrected to 25; all 79 rows now use consistent schema
+- **Positive:** Scorer changes can be applied retroactively without re-running the pipeline
+- **Negative:** `rescore.py` must be run manually after scorer changes; no auto-invalidation
+
+---
+
+## ADR-014 — TB "No" vs "NA" and Auth "Unspecified" Semantics {#adr-014}
+
+**Status:** Accepted
+
+### Context
+The TB test field emitted only "Yes" or "NA", conflating "criteria found, TB not required" with "no criteria found at all". The initial authorization duration field emitted "NA" when the authorization section existed but stated no specific month count — but the business rules require "Unspecified" in this case, reserving "NA" for when no authorization section is found.
+
+### Decision
+- **TB:** When clinical access criteria are retrieved (past the empty-context guard), the LLM is instructed to return only "Yes" or "No". The default fallback is "No" (criteria found, TB not mentioned = not required). "NA" is returned only from the empty-context guard or the error path.
+- **Initial Auth:** When the authorization section is found (past the empty-context guard), a post-parse coercion maps `None` / `""` / `"NA"` to `"Unspecified"`. "NA" is returned only when no authorization context is found at all.
+
+### Rationale
+- Distinguishes "not required" from "unknown" — important for scoring accuracy
+- "Unspecified" aligns with the business rules' intent: PA applies, so a duration exists even if not stated
+- Forward-fixing: takes effect on the next pipeline run; stored data unchanged
+
+### Consequences
+- **Positive:** TB output now has three meaningful states: Yes / No / NA
+- **Positive:** Auth duration distinguishes Unspecified (PA exists, no months stated) from NA (no PA section)
+- **Negative:** Stored results from prior runs still carry the old semantics until re-extracted
+
+---
+
+## ADR-015 — Session TTL and Thread-Safe UI State {#adr-015}
+
+**Status:** Accepted
+
+### Context
+The Flask UI (`app.py`, `threaded=True`) stored uploaded PDF temp paths in a plain `dict`. A client that uploaded but never opened the `/stream` endpoint leaked the temp file and dict entry forever. The dict was mutated across threads with no synchronization.
+
+### Decision
+Sessions are stored as `(path, created_at, original_name)` tuples in a `dict` guarded by `threading.Lock`. A 600-second TTL is enforced: `_sweep_sessions()` runs on each `/upload` and reaps expired entries (deletes temp file + pops dict entry). Lock-guarded helpers (`_register_session`, `_get_session`, `_discard_session`) encapsulate all access.
+
+### Rationale
+- TTL prevents temp file and memory leaks from abandoned uploads
+- Lock eliminates data races under `threaded=True`
+- Sweep-on-upload is opportunistic and avoids a background timer thread
+- Original filename is preserved in the session tuple for accurate CSV output
+
+### Consequences
+- **Positive:** No leaked temp files or dict entries; thread-safe access
+- **Positive:** Original PDF filename appears in `results.csv` (not "uploaded_pdf")
+- **Negative:** A session that expires mid-stream (after 600s) will fail — unlikely in practice since extractions complete in under 60s
+
+---
+
 ## Summary Table
 
 | ADR | Decision | Key Trade-off |
@@ -315,11 +411,15 @@ Internal sentinels never appear in output. This is enforced in two layers:
 | 001 | Page-level PDF extraction | Granular retrieval vs page-boundary splits |
 | 002 | Strict + proximity union | Maximum recall vs slight extra noise |
 | 003 | Tight sort signals + 15-page cap | Relevant pages first vs very long criteria sections |
-| 004 | Abstracted model router | Zero-change backend swap vs lowest-common-denominator prompts |
-| 005 | Rolling RPM throttler | Max throughput vs shared throttler state |
+| 004 | Abstracted model router (auto-detect from env) | Zero-change backend swap vs lowest-common-denominator prompts |
+| 005 | Rolling-window throttlers (singleton + locked) | Max throughput + thread safety vs single serialization point |
 | 006 | FDA parity baseline (score=50) | Objective baseline vs no partial credit for alternatives |
 | 007 | Incremental checkpoint saves | Crash resilience vs manual stale-entry cleanup |
 | 008 | Slot model for step counting | Correct counts vs LLM cascade boundary errors |
 | 009 | Brand-aware renewal sweep | Correct renewal retrieval vs wider ±8 window noise |
 | 010 | 20K char context limit | Groq TPM safety vs very dense criteria sections |
 | 011 | Sentinels mapped to "NA" in output | Valid graded cells vs losing non-result detail in CSV |
+| 012 | Extraction error flag + checkpoint skip | Auto-retry on re-run vs infinite retry on persistent failures |
+| 013 | Scorer version stamp | Retroactive re-score vs manual rescore.py invocation |
+| 014 | TB No/NA and Auth Unspecified semantics | Precise output states vs stored data unchanged until re-extract |
+| 015 | Session TTL + thread-safe UI state | No leaked resources vs expired mid-stream edge case |

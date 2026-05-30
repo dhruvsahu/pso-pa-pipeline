@@ -621,8 +621,10 @@ Duration fields may contain:
 
 if __name__ == "__main__":
 
+    from utils.document_processor import DocumentProcessor
 
     extractor = AuthorizationExtractor()
+    document_processor = DocumentProcessor()
 
     test_cases = [
 
@@ -724,11 +726,15 @@ if __name__ == "__main__":
 
         try:
 
+            pages = document_processor.process_pdf(pdf_path)
+
             result = extractor.extract(
 
-                pdf_path=pdf_path,
+                pages=pages,
 
-                brand=brand
+                brand=brand,
+
+                pdf_name=pdf_path
             )
 
             all_results.append(result)

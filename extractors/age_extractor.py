@@ -442,11 +442,18 @@ Where:
 
 if __name__ == "__main__":
 
+    from utils.document_processor import DocumentProcessor
+
     extractor = AgeExtractor()
+    document_processor = DocumentProcessor()
+
+    pdf_path = "Sample_PsO_ADS_Track/148593-4960549.pdf"
+    pages = document_processor.process_pdf(pdf_path)
 
     result = extractor.extract(
-        pdf_path="Sample_PsO_ADS_Track/148593-4960549.pdf",
-        brand="STELARA"
+        pages=pages,
+        brand="STELARA",
+        pdf_name=pdf_path
     )
 
     print(json.dumps(result, indent=2))

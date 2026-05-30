@@ -47,16 +47,6 @@ class DocumentProcessor:
             text
         )
 
-        # ---------------------------------------------
-        # LIMIT NEWLINES
-        # ---------------------------------------------
-
-        text = re.sub(
-            r'\n{3,}',
-            '\n\n',
-            text
-        )
-
         return text.strip()
 
     # =====================================================
@@ -68,29 +58,31 @@ class DocumentProcessor:
         pdf_path
     ):
 
-        doc = fitz.open(
-            pdf_path
-        )
-
         pages = []
 
-        for i in range(len(doc)):
+        # Context manager ensures the native C-level file
+        # handle and memory-mapped pages are released
+        # immediately after extraction, preventing resource
+        # leaks across the 79-PDF batch run (P2-11 fix).
+        with fitz.open(pdf_path) as doc:
 
-            raw_text = (
-                doc[i].get_text()
-            )
+            for i in range(len(doc)):
 
-            cleaned_text = (
-                self.clean_text(
-                    raw_text
+                raw_text = (
+                    doc[i].get_text()
                 )
-            )
 
-            pages.append({
+                cleaned_text = (
+                    self.clean_text(
+                        raw_text
+                    )
+                )
 
-                "page_number": i + 1,
+                pages.append({
 
-                "text": cleaned_text
-            })
+                    "page_number": i + 1,
+
+                    "text": cleaned_text
+                })
 
         return pages

@@ -1,4 +1,5 @@
 import json
+import re
 import pandas as pd
 
 
@@ -59,18 +60,22 @@ class AccessQualityScorer:
 
     def _parse_min_age(self, age_str):
         """
-        Parse an age string like '>=6', '>=18', '>=4'
+        Parse an age string like '>=6', '>=18', '>=4',
+        '6 years', '>=6 years of age', 'Adults (>=18)'
         into an integer.  Returns None if unparseable.
+
+        Uses regex to extract the first integer, so extra
+        text after the number (e.g. 'years of age') no
+        longer causes a ValueError (P2-8 fix).
         """
         if not age_str or str(age_str).strip() in ("NA", ""):
             return None
 
-        s = str(age_str).strip().replace(">=", "").replace(">", "").strip()
+        match = re.search(r'(\d+)', str(age_str))
+        if match:
+            return int(match.group(1))
 
-        try:
-            return int(s)
-        except ValueError:
-            return None
+        return None
 
     # =====================================================
     # ACCESS SCORING
@@ -360,29 +365,22 @@ class AccessQualityScorer:
 
         # =================================================
         # FDA ALIGNMENT
+        # Derived directly from access_category so the
+        # two classifications can never disagree (P3-6).
         # =================================================
 
-        total_steps = (
-            brand_steps
-            + generic_steps
-            + (1 if phototherapy_required else 0)
-        )
+        _ALIGNMENT_MAP = {
+            "Highly Restricted":
+                "More restrictive than FDA label",
+            "Restricted Access":
+                "More restrictive than FDA label",
+            "FDA Parity":
+                "Near FDA parity",
+            "Preferred Access":
+                "Favorable relative to FDA label",
+        }
 
-        if total_steps >= 3 or score < 40:
-            fda_alignment = (
-                "More restrictive than FDA label"
-            )
-
-        elif score > 55 or (
-            total_steps == 0
-            and not deductions
-        ):
-            fda_alignment = (
-                "Favorable relative to FDA label"
-            )
-
-        else:
-            fda_alignment = "Near FDA parity"
+        fda_alignment = _ALIGNMENT_MAP[category]
 
         # =================================================
         # FINAL OUTPUT
