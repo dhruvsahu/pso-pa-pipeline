@@ -141,36 +141,59 @@ ACITRETIN · AMJEVITA · BIMZELX · CIMZIA · COSENTYX · ENBREL · ILUMYA · OT
 
 ---
 
-## Scoring Model
+## Scoring Model (scorer v2.2)
 
-Scores start at **50 (FDA parity)** and are adjusted by comparing the payer's policy to the FDA prescribing label.
+Start at **50** — the neutral / unknown baseline. Each axis is **tri-state**: a restriction *present*
+beyond the FDA label **deducts**; a restriction *confirmed absent* (explicit `"No"` / empty list /
+confirmed 0) earns a **small +2 confirmed-open credit**; an *unknown* value (`"NA"`/missing) does
+**nothing**. Two terms that are *strictly more permissive than the FDA label* earn larger credits
+(age younger than FDA +5, TB waived +3). Final score is clamped to `[0, 100]`.
 
-| Restriction | Deduction |
-|-------------|-----------|
-| Brand step therapy | −10/step (max −30) |
-| Generic step therapy | −5/step (max −15) |
-| Mandatory phototherapy step | −5 |
-| Specialist restriction | −8 |
-| Reauthorization required | −5 |
-| Quantity limits | −5 |
-| TB test (FDA says not required) | −3 |
-| Age more restrictive than FDA | −5 |
+| Restriction (beyond FDA) | Deduction | Confirmed-absent credit |
+|--------------------------|-----------|--------------------------|
+| Brand step therapy | −10/step (max −30) | — *(both step counts confirmed 0 → +2)* |
+| Generic step therapy | −5/step (max −15) | *(see above)* |
+| Mandatory phototherapy step | −5 | +2 (explicit "No") |
+| Specialist restriction | −8 | +2 (empty list) |
+| Reauthorization required | −5 | +2 (explicit "No") |
+| Quantity limits | −5 | +2 (empty list) |
 
-| Leniency | Bonus |
-|----------|-------|
-| TB test waived vs FDA | +3 |
+| Strictly-better-than-FDA credit | Bonus |
+|---------------------------------|-------|
 | Age less restrictive than FDA | +5 |
+| TB test waived where FDA expects it | +3 |
+| TB test required where FDA does *not* expect it | −3 (deduction) |
+| Age more restrictive than FDA | −5 (deduction) |
 
-**Access categories:**
+A missing/unextracted value (`"NA"`) is **neutral** on every axis — so a verified-open policy scores
+above an unextracted one, but an unextracted policy is never inflated.
+
+**Access categories** (anchors 0/25/50/75/100; half-open intervals):
 
 | Score | Category |
 |-------|----------|
-| 75–100 | Preferred Access |
-| 50–75 | FDA Parity |
-| 25–50 | Restricted Access |
-| 0–25 | Highly Restricted |
+| `[75, 100]` | Preferred Access *(not reachable for this dataset — see scale note)* |
+| `[50, 75)` | FDA Parity |
+| `[25, 50)` | Restricted Access |
+| `[0, 25)` | Highly Restricted |
 
-Observed range across 79 real-world PA policies (scorer v1.0): **7–50, average 27.8, median 27**. No policy scores above 50 — consistent with payers universally adding restrictions beyond the FDA label. Category split: **34 Highly Restricted, 43 Restricted Access, 2 FDA Parity** (the 2 at exactly 50). These figures are reproducible: `python rescore.py` re-scores every row from its stored extraction values and `python result_formatter.py` regenerates the CSV/XLSX.
+Observed range across 79 real-world PA policies (scorer v2.2): **9–50, average 29.7, median 29**.
+Category split: **34 Highly Restricted, 43 Restricted Access, 2 FDA Parity, 0 Preferred Access**.
+Calibration is pinned by `test_scoring.py` (all-`"NA"` ≈50, confirmed-open ≈60, maximally restrictive
+≤10, most-permissive ≈68, plus parsing guards for upper-bound age and reauth casing). Figures are
+reproducible: `python rescore.py` re-scores every row from its stored extraction values and
+`python result_formatter.py` regenerates the CSV/XLSX.
+
+> **Note on the scale (why scores cap ~68 and never reach Preferred).** A prior-authorization policy
+> only *adds* restrictions versus the FDA label, and for these PsO brands the FDA baseline already
+> imposes no step therapy / quantity limit / specialist / reauthorization. So a policy can climb
+> above 50 only via small confirmed-open credits (+2/axis, max +10) plus the two better-than-FDA
+> terms (age +5, TB +3) → a practical ceiling of ~68. The objective's **75 ("preferred") and 100
+> ("best access against all competitors") anchors are not reachable from the extracted parameters**
+> for this dataset — they would require a competitive/formulary-positioning signal the pipeline does
+> not extract. This is a deliberate, documented choice (**Option A**); see `docs/ADR.md` ADR-016 for
+> the alternatives considered (cohort-relative normalization, generosity signals,
+> competitive-positioning extraction) and why the faithful vs-FDA model was chosen.
 
 ---
 
