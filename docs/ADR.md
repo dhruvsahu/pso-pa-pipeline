@@ -25,6 +25,7 @@
 13. [ADR-013 — Scorer Version Stamp](#adr-013)
 14. [ADR-014 — TB "No" vs "NA" and Auth "Unspecified" Semantics](#adr-014)
 15. [ADR-015 — Session TTL and Thread-Safe UI State](#adr-015)
+16. [ADR-016 — Access Score Re-Anchor (Option A, v2.2; supersedes ADR-006)](#adr-016)
 
 ---
 
@@ -156,7 +157,11 @@ Replace all hardcoded sleeps with rolling-window throttlers in `ModelRouter`:
 
 ## ADR-006 — FDA Parity Baseline Scoring {#adr-006}
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-016](#adr-016) — the 50-baseline anchor is retained, but the scoring
+was reworked (v2.2): deductions for restrictions beyond FDA, a small +2 confirmed-open credit per
+axis, and strictly-better-than-FDA credits (age +5, TB +3). `"NA"` is neutral. Practical ceiling
+~68; the 75/100 "Preferred" anchors are not reachable from the extracted parameters for this dataset
+(Option A).
 
 ### Context
 The problem statement requires measuring "access quality" for a given payer's PA policy. Access quality is inherently relative — restrictive compared to what? Two reference points were considered: (a) average payer policy, (b) FDA prescribing label.
@@ -404,6 +409,137 @@ Sessions are stored as `(path, created_at, original_name)` tuples in a `dict` gu
 
 ---
 
+## ADR-016 — Access Score Re-Anchor (Option A, v2.2) {#adr-016}
+
+> This ADR records the full journey: an initial v2.0 "two-sided / full 0–100" attempt (documented
+> below), found flawed by review, then **corrected to Option A** (v2.1 → v2.2). Read the
+> **Correction** and **Alternatives Considered** sections at the end for the live model.
+
+**Status:** Accepted **with correction** (supersedes [ADR-006](#adr-006)). The initial **v2.0**
+credit-for-absence model documented below was found flawed by a 5-perspective review (`REVIEW.md`,
+2026-05-30) and **corrected to Option A** (v2.1) — see "Correction" and "Alternatives Considered"
+at the end of this ADR. Implementation tracked in `specs/fix-access-score-review/`.
+
+### Context
+The hackathon objective defines Access Quality on a 0–100 scale with explicit anchors: 0 = no
+access, 25 = restricted vs FDA, 50 = parity with FDA, **75 = preferred vs FDA**, **100 = best
+possible / no restrictions applied**. The original scorer (ADR-006, `SCORER_VERSION = "1.0"`)
+started at 50 and could add at most +8 (TB +3, age +5), so its ceiling was ~58 — it could not
+represent the 75 or 100 anchors at all (review finding **P0-5**).
+
+P0-5 was first **deferred** after a focused Devil's Advocate review, which correctly noted that
+(a) there is **no gold Access Score** in the provided data to calibrate against (the `Submissions`
+tab column is empty), and (b) a naïve +50 "credits" block risked diverging from a gold that might
+cluster ≤50. The objective text was then re-read: it *explicitly* requires the scale to be capable
+of the full 0–100 with 75/100 above parity. The decision was reopened with the constraint to build
+it **deterministically** (no LLM — the eval models `llama-3.1-8b-instant` / `llama-3.3-70b` have
+tight per-day token budgets that an LLM scorer would strain) and to calibrate against synthetic
+anchor fixtures rather than asserting weights.
+
+### Decision
+Keep **50 = FDA parity** as the pivot. Add a **credit track** mirroring the deductions, with an
+either/or guard so each dimension contributes a deduction *or* a credit, never both:
+
+```
+Score = 50
+  − restrictions beyond FDA  (brand −10/step cap −30, generic −5/step cap −15,
+                              phototherapy −5, specialist −8, reauth −5, QL −5,
+                              TB-beyond-FDA −3, age-more −5)        → toward 0
+  + absence / better-than-FDA (no steps +10, no phototherapy +3,
+                              no specialist +5, no reauth +5, no QL +3,
+                              age-less +5, TB-waived +3)            → toward 100
+clamped to [0, 100]
+```
+
+Calibration is pinned by `test_scoring.py`: an unrestricted policy scores **≥75**, a maximally
+restrictive one **≤10**, and a moderately-managed "parity" policy **≈50**. `SCORER_VERSION` is
+bumped to `"2.0"` and `score_breakdown` now carries `{deductions, credits}`.
+
+### Rationale
+- Satisfies the literal objective (full 0–100, anchored 0/25/50/75/100) while keeping typical
+  step-therapy policies below parity.
+- Deterministic → reproducible (re-run `rescore.py`), free, and adds nothing to the eval models'
+  rate-limit budgets (unlike a GenAI/hybrid scorer).
+- For these PsO brands the FDA baseline already lacks step therapy / QL / specialist / reauth, so
+  "FDA parity" and "no restrictions" are close; the model is therefore an *absolute
+  restriction-burden* scale anchored at the objective's labels. The competitive sense of 100 ("best
+  access against all competitors") is **not** modelled — that signal is not extracted.
+
+### Consequences (of the WITHDRAWN v2.0 model — see Correction below for the live v2.1 result)
+- ~~**Positive:** Re-scored distribution spans **10–76** (was 7–50), mean 36.7, median 33; 2 policies
+  reach the Preferred band (≥75). The 75/100 region is now reachable.~~ *(This "reachability" was an
+  artifact of crediting missing data — withdrawn in v2.1; live distribution is 7–50, 0 Preferred.)*
+- **Positive:** Single-source `category`/`fda_alignment` (ADR-style P3-6 fix) carried forward under
+  the new cutoffs.
+- **Negative:** Without a gold Access Score, the credit weights are calibrated to synthetic anchors,
+  not validated against ground truth — accuracy on the score dimension remains unmeasured (the
+  validation harness, review finding P1-3, was deferred).
+- **Negative:** Scores cannot reach a true 100 (max observed credit path ≈ +34 → ~84), since the
+  competitive-positioning axis is not extracted.
+
+### Correction (2026-05-30) — Option A
+
+A 5-perspective review (`REVIEW.md`) found the v2.0 credit-for-absence model defective:
+- **P0-1:** it scored missing data (`"NA"`) as "restriction confirmed absent," awarding credit on
+  86% of rows; the two policies that reached the Preferred band (76) were the **two rows where
+  extraction found nothing** (incl. the `NO BRAND MATCH FOUND` row). The "v2.0 reaches Preferred"
+  result was an artifact of extraction failure.
+- **P1-1:** crediting the absence of step/QL/specialist/reauth — which the FDA baseline *also* lacks
+  — pushed genuine FDA-parity policies to ~76, breaking the "50 = parity" anchor.
+
+**Decision: Option A.** Remove the absence-credits; keep only **strictly better-than-FDA** credits
+(age-younger +5, TB-waived +3). This makes 50 = faithful FDA parity, treats `"NA"` as *unknown*
+(neither credit nor penalty), and accepts a practical **ceiling of ~58** — for these PsO PA
+policies the **75/100 anchors are unreachable**, because a prior-authorization policy only *adds*
+restrictions versus the FDA label. `SCORER_VERSION → "2.1"`. (This realigns with the original
+ADR-006 observation; the v2.0 attempt to force the full range is abandoned as not honestly
+supportable from the extracted data.)
+
+**Refinement (v2.2) — confirmed-only credit.** A follow-up review of v2.1 noted that removing *all*
+absence-credits collapsed a real distinction: a policy that *verified* it is open scored identically
+to one where nothing was extracted (both ~50). v2.2 adds a **small +2 "confirmed-open" credit** per
+axis that fires ONLY on positive evidence of absence (explicit `"No"` / empty list / confirmed 0) —
+**never on `"NA"`**. This makes each axis tri-state (present → deduct, confirmed-absent → +2,
+unknown → neutral), restoring the verified-open-vs-unextracted distinction while keeping the P0-1
+fix intact (missing data still moves nothing). Trade-off recorded: 50 now reads as the
+*neutral/unknown* baseline and a fully-confirmed-open policy sits slightly above it (~60), so the
+"50 = FDA parity" anchor is interpreted as "at-or-just-above parity," not an exact point. New
+ceiling ~68 (confirmed-open +10, age +5, TB +3) — still < 75, so "Preferred" remains unreachable.
+`SCORER_VERSION → "2.2"`.
+
+**Re-scored result (v2.2):** range **9–50**, mean 29.7, median 29, **0 rows ≥75**; the two former
+all-`"NA"` "Preferred" rows are **50** (unchanged — `"NA"` stays neutral). Category split: 34 Highly
+Restricted / 43 Restricted / 2 FDA Parity / 0 Preferred. Credit footprint: 73 confirmed-no-photo
+(+2), 2 confirmed-no-reauth (+2), 2 age-younger (+5); 0 credits derived from `"NA"`. Calibration
+pinned by `test_scoring.py` (all-`"NA"`≈50, confirmed-open≈60, max≤10, most-permissive≈68, plus
+upper-bound-age and reauth-casing guards).
+
+**Re-score scope (regenerate vs re-run):** `rescore.py` recomputes `access_quality` from the
+**stored** extraction values only — no LLM, no PDF re-parse — so it reflects scoring-logic changes
+but **not** extractor fixes (TB/Auth/age semantics), which stay frozen in the JSON until a full
+pipeline re-run. `rescore.py` reports the input `scorer_version` counts before overwriting, so
+version drift is visible.
+
+### Alternatives Considered (reaching the upper 75/100 range)
+
+The upper anchors cannot be reached on a "restrictions vs FDA" axis; doing so requires changing what
+the upper half measures. Options weighed (2026-05-30):
+
+| Option | Reaches 0–100? | Deterministic? | LLM re-run? | 50 = FDA parity? |
+|--------|----------------|----------------|-------------|------------------|
+| **A — vs-FDA, better-than-FDA credits only (CHOSEN)** | No (~0–58) | Yes | No | Yes (faithful) |
+| B — cohort-relative normalization | Yes (by construction) | Yes | No | No (50 = median) |
+| C — generosity signals (auth duration / age / TB) | Partial (~0–75) | Yes | No | ~ mostly |
+| D — competitive/formulary positioning extraction | Yes (faithful, true 100) | Yes (scoring) | **Yes** (new extractor) | Yes |
+| E — GenAI holistic scoring | Yes | No | Yes (per-row) | n/a |
+
+**Why A:** there is **no gold Access Score** to validate against, so any upper-range approach is a
+bet; if the gold scored vs-FDA (PA policies ≤50), reaching 75/100 would *increase* error. A is the
+faithful, deterministic, lowest-risk choice. B/C/D/E are recorded here as future work should a gold
+sample or competitive-positioning signal become available.
+
+---
+
 ## Summary Table
 
 | ADR | Decision | Key Trade-off |
@@ -423,3 +559,4 @@ Sessions are stored as `(path, created_at, original_name)` tuples in a `dict` gu
 | 013 | Scorer version stamp | Retroactive re-score vs manual rescore.py invocation |
 | 014 | TB No/NA and Auth Unspecified semantics | Precise output states vs stored data unchanged until re-extract |
 | 015 | Session TTL + thread-safe UI state | No leaked resources vs expired mid-stream edge case |
+| 016 | vs-FDA score, ceiling ~68 (Option A; supersedes 006) | Faithful 50-anchor + confirmed-open signal vs 75/100 unreachable for this dataset |
