@@ -60,22 +60,28 @@ class AccessQualityScorer:
 
     def _parse_min_age(self, age_str):
         """
-        Parse an age string like '>=6', '>=18', '>=4',
-        '6 years', '>=6 years of age', 'Adults (>=18)'
-        into an integer.  Returns None if unparseable.
+        Parse a minimum-age string into an integer threshold.
 
-        Uses regex to extract the first integer, so extra
-        text after the number (e.g. 'years of age') no
-        longer causes a ValueError (P2-8 fix).
+        Handles values with extra text ('6 years', '>=6 years') by
+        extracting the first integer. Returns None for non-numeric
+        tokens ('NA', '', 'FDA labelled age', 'No Age Restriction').
+
+        Note: '>' and '>=' both map to the same integer threshold; the
+        more/less-restrictive comparison treats them identically.
         """
-        if not age_str or str(age_str).strip() in ("NA", ""):
+        if age_str is None:
             return None
 
-        match = re.search(r'(\d+)', str(age_str))
-        if match:
-            return int(match.group(1))
+        s = str(age_str).strip()
 
-        return None
+        if s.upper() in ("NA", "") or s in (
+            "FDA labelled age",
+            "No Age Restriction",
+        ):
+            return None
+
+        m = re.search(r"\d+", s)
+        return int(m.group()) if m else None
 
     # =====================================================
     # ACCESS SCORING
@@ -365,22 +371,26 @@ class AccessQualityScorer:
 
         # =================================================
         # FDA ALIGNMENT
-        # Derived directly from access_category so the
-        # two classifications can never disagree (P3-6).
+        # Derived from the SAME score bands as `category`
+        # (single source of truth) so the two can never
+        # disagree:
+        #   < 50      → More restrictive than FDA label
+        #   50 – 75   → Near FDA parity
+        #   >= 75     → Favorable relative to FDA label
         # =================================================
 
-        _ALIGNMENT_MAP = {
-            "Highly Restricted":
-                "More restrictive than FDA label",
-            "Restricted Access":
-                "More restrictive than FDA label",
-            "FDA Parity":
-                "Near FDA parity",
-            "Preferred Access":
-                "Favorable relative to FDA label",
-        }
+        if score < 50:
+            fda_alignment = (
+                "More restrictive than FDA label"
+            )
 
-        fda_alignment = _ALIGNMENT_MAP[category]
+        elif score < 75:
+            fda_alignment = "Near FDA parity"
+
+        else:
+            fda_alignment = (
+                "Favorable relative to FDA label"
+            )
 
         # =================================================
         # FINAL OUTPUT
