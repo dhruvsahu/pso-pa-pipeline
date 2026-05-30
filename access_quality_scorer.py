@@ -7,8 +7,17 @@ import pandas as pd
 # rows produced by an older scorer (e.g. the legacy flat-list breakdown that
 # scored a STELARA row at 70) are identifiable and can be re-scored. Bump this
 # whenever the scoring logic or weights change.
-# 1.0 = current deduction-only model, 50 = FDA parity (P0-5 re-anchor deferred).
-SCORER_VERSION = "1.0"
+# 2.0 = two-sided "credit-for-absence" model (WITHDRAWN — it scored missing
+#       data as "no restriction" and inflated parity policies; see ADR-016).
+# 2.1 = Option A: deductions for restrictions beyond FDA; credits ONLY for
+#       strictly better-than-FDA terms (age-younger +5, TB-waived +3).
+# 2.2 = adds a SMALL confirmed-only credit (+2) per axis that the policy
+#       VERIFIES is unrestricted (explicit "No" / empty list / confirmed 0) —
+#       never on "NA". Distinguishes a verified-open policy from an unextracted
+#       one while keeping missing data neutral (50). Tri-state per axis:
+#       present → deduct, confirmed-absent → +2, unknown("NA") → neutral.
+#       Ceiling ~68 (still < 75 → "Preferred" remains unreachable).
+SCORER_VERSION = "2.2"
 
 
 class AccessQualityScorer:
@@ -111,7 +120,7 @@ class AccessQualityScorer:
         score = 50
 
         deductions = []
-        bonuses = []
+        credits = []
 
         # -------------------------------------------------
         # LOAD FDA BASELINE
@@ -147,11 +156,8 @@ class AccessQualityScorer:
 
         # extractor returns phototherapy_required
         # ("Yes" / "No" / "NA"), not a count
-        phototherapy_required = (
-            step_therapy_result.get(
-                "phototherapy_required"
-            ) == "Yes"
-        )
+        _photo = step_therapy_result.get("phototherapy_required")
+        phototherapy_required = (_photo == "Yes")
 
         brand_step_penalty = min(brand_steps * 10, 30)
         generic_step_penalty = min(generic_steps * 5, 15)
@@ -186,6 +192,28 @@ class AccessQualityScorer:
                 f"(-{photo_penalty})"
             )
 
+        # ----- CONFIRMED-OPEN CREDITS (v2.2) -----
+        # +2 when the policy VERIFIES no restriction on an axis (confirmed 0 /
+        # explicit "No" / empty list) — NEVER on "NA". Keeps missing data
+        # neutral (50) while distinguishing a verified-open policy from an
+        # unextracted one. Strictly-better-than-FDA terms (age/TB) are scored
+        # separately below at +5/+3.
+
+        # Confirmed no step therapy: BOTH counts present and numeric and 0.
+        _brand_confirmed = str(_brand_steps).lstrip("-").isdigit()
+        _generic_confirmed = str(_generic_steps).lstrip("-").isdigit()
+        if (
+            _brand_confirmed and _generic_confirmed
+            and brand_steps == 0 and generic_steps == 0
+        ):
+            score += 2
+            credits.append("No step therapy (confirmed) (+2)")
+
+        # Confirmed no phototherapy step (explicit "No", not "NA").
+        if str(_photo).strip().lower() == "no":
+            score += 2
+            credits.append("No phototherapy step (confirmed) (+2)")
+
         # =================================================
         # SPECIALIST RESTRICTIONS
         # FDA baseline: specialist_required = "No"
@@ -204,15 +232,22 @@ class AccessQualityScorer:
             baseline.get("specialist_required", "No")
         ).strip()
 
-        if (
+        payer_has_specialist = (
             isinstance(specialists, list)
             and len(specialists) > 0
-            and fda_specialist == "No"
-        ):
+        )
+
+        if payer_has_specialist and fda_specialist == "No":
             score -= 8
             deductions.append(
                 "Specialist restriction "
                 "not in FDA label (-8)"
+            )
+        elif isinstance(specialists, list) and len(specialists) == 0:
+            # Confirmed empty list = verified no specialist restriction.
+            score += 2
+            credits.append(
+                "No specialist restriction (confirmed) (+2)"
             )
 
         # =================================================
@@ -225,14 +260,24 @@ class AccessQualityScorer:
             "reauthorization_required"
         )
 
+        # Normalize so a casing drift ("yes"/"Yes") can't flip the sign.
+        reauth_norm = str(reauth).strip().lower()
+        reauth_required = (reauth_norm == "yes")
+
         fda_reauth = str(
             baseline.get("reauthorization_expected", "No")
         ).strip()
 
-        if reauth == "Yes" and fda_reauth == "No":
+        if reauth_required and fda_reauth == "No":
             score -= 5
             deductions.append(
                 "Reauthorization not in FDA label (-5)"
+            )
+        elif reauth_norm == "no":
+            # Confirmed no reauthorization required (explicit "No", not "NA").
+            score += 2
+            credits.append(
+                "No reauthorization required (confirmed) (+2)"
             )
 
         # =================================================
@@ -252,14 +297,21 @@ class AccessQualityScorer:
             baseline.get("quantity_limit_expected", "No")
         ).strip()
 
-        if (
+        payer_has_ql = (
             isinstance(quantity_limits, list)
             and len(quantity_limits) > 0
-            and fda_ql == "No"
-        ):
+        )
+
+        if payer_has_ql and fda_ql == "No":
             score -= 5
             deductions.append(
                 "Quantity limits not in FDA label (-5)"
+            )
+        elif isinstance(quantity_limits, list) and len(quantity_limits) == 0:
+            # Confirmed empty list = verified no quantity limit.
+            score += 2
+            credits.append(
+                "No quantity limit (confirmed) (+2)"
             )
 
         # =================================================
@@ -269,23 +321,25 @@ class AccessQualityScorer:
         # If FDA says Yes and payer does NOT require → +3
         # =================================================
 
-        tb_required = clinical_access_result.get(
-            "tb_test_required"
-        )
+        # Normalize casing on both sides (consistency with the reauth fix).
+        tb_norm = str(
+            clinical_access_result.get("tb_test_required")
+        ).strip().lower()
 
         fda_tb = str(
             baseline.get("tb_test_expected", "NA")
         ).strip()
+        fda_tb_norm = fda_tb.lower()
 
-        if fda_tb == "No" and tb_required == "Yes":
+        if fda_tb_norm == "no" and tb_norm == "yes":
             score -= 3
             deductions.append(
                 "TB test required; not expected per "
                 "FDA label (-3)"
             )
-        elif fda_tb == "Yes" and tb_required == "No":
+        elif fda_tb_norm == "yes" and tb_norm == "no":
             score += 3
-            bonuses.append(
+            credits.append(
                 "TB test waived vs FDA label (+3)"
             )
 
@@ -302,7 +356,21 @@ class AccessQualityScorer:
         fda_age_str = baseline.get("minimum_age", "")
         fda_min_age = self._parse_min_age(fda_age_str)
 
-        payer_min_age = self._parse_min_age(age_value)
+        # A "<N" / "under N" / "up to N" value is an UPPER bound (e.g. a
+        # pediatric/max-age clause), not a minimum-age threshold. Comparing it
+        # as a minimum is meaningless (and produced a contradictory
+        # "payer <18 vs FDA >=4 (-5)" message), so skip the age comparison.
+        _age_str = str(age_value).strip().lower() if age_value is not None else ""
+        age_is_upper_bound = (
+            _age_str.startswith("<")
+            or _age_str.startswith("under")
+            or _age_str.startswith("up to")
+        )
+
+        payer_min_age = (
+            None if age_is_upper_bound
+            else self._parse_min_age(age_value)
+        )
 
         if fda_min_age is not None and payer_min_age is not None:
 
@@ -317,7 +385,7 @@ class AccessQualityScorer:
 
             elif payer_min_age < fda_min_age:
                 score += 5
-                bonuses.append(
+                credits.append(
                     f"Age restriction less restrictive "
                     f"than FDA label "
                     f"(payer {age_value} vs FDA "
@@ -410,7 +478,7 @@ class AccessQualityScorer:
 
             "score_breakdown": {
                 "deductions": deductions,
-                "bonuses": bonuses
+                "credits": credits
             }
         }
 
