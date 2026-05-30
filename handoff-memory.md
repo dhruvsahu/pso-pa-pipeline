@@ -514,3 +514,27 @@ P3-3 declarative-weights-table refactor still skipped.
 
 **Doc trail updated:** `REVIEW.md` (2nd review), `docs/ADR.md` (ADR-016 v2.2 refinement + P2-A fixes),
 `README.md`, `docs/PIPELINE_FLOW.md`, this file. `specs/fix-access-score-review/` carries a v2.2 note.
+
+---
+
+# P0-3 now FIXED (was deferred) + outputs re-synced to v2.2
+
+Earlier P0-3 (Reauthorization Required derivation) was deliberately deferred. Now implemented per
+user request. Also discovered the shipped `outputs/*` had drifted to **v1.0 scores** while the code
+was v2.2 — re-scored to resync.
+
+**P0-3 fix (`result_formatter.py`):** added `derive_reauth_required(reauth_required, reauth_dur,
+reauth_reqs)` and wired it into `flatten_result`. Business rule: the column is **Yes/No, never
+"NA"** — "Yes" if the policy states reauth required OR gives a reauth duration OR documents reauth
+requirements, else "No". Applied at flatten time (the single chokepoint for both the batch CSV and
+the Flask UI), so it covers regeneration and future runs without re-extraction.
+**Result:** `Reauthorization Required` = 63 Yes / 16 No / **0 NA** (was 63/2/14). The 14 former-`NA`
+rows all derived to "No" (none had a duration or requirements — correct, not arbitrary).
+
+**Outputs resync:** ran `rescore.py` (logged `{'1.0': 79} → 2.2`) + `result_formatter.py`. Final
+state: JSON+CSV all `scorer_version 2.2`; distribution **9–50, mean 29.7, median 29, 0 ≥75**; CSV 79
+rows, header matches Submissions tab, 0 blanks. Code / docs / outputs are now all v2.2-consistent.
+
+**Still open (deferred scope, not bugs):** notebook deliverable absent; `Age` never emits
+"FDA labelled age" (P1-8); no gold-validation harness (P1-3). `REVIEW.md` is the user's restored
+original full-project review (lists P0-3 etc. as open) — left as-is per user.
