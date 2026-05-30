@@ -177,8 +177,8 @@ above an unextracted one, but an unextracted policy is never inflated.
 | `[25, 50)` | Restricted Access |
 | `[0, 25)` | Highly Restricted |
 
-Observed range across 79 real-world PA policies (scorer v2.2): **9–50, average 29.7, median 29**.
-Category split: **34 Highly Restricted, 43 Restricted Access, 2 FDA Parity, 0 Preferred Access**.
+Observed range across 79 real-world PA policies (scorer v2.2, full re-extraction): **12–52, average 31.8, median 32**.
+Category split: **23 Highly Restricted, 52 Restricted Access, 4 FDA Parity, 0 Preferred Access**.
 Calibration is pinned by `test_scoring.py` (all-`"NA"` ≈50, confirmed-open ≈60, maximally restrictive
 ≤10, most-permissive ≈68, plus parsing guards for upper-bound age and reauth casing). Figures are
 reproducible: `python rescore.py` re-scores every row from its stored extraction values and
@@ -239,5 +239,6 @@ Use these to diagnose extraction failures — they show exactly which pages were
 
 ## Documentation
 
+- **[Output Parameters](docs/OUTPUT_PARAMETERS.md)** — detailed explanation of all 15 output columns, value conventions, scoring impact, and worked examples
 - **[Pipeline Flow](docs/PIPELINE_FLOW.md)** — end-to-end walkthrough with diagrams
-- **[Architecture Decision Records](docs/ADR.md)** — 10 key design decisions with rationale and trade-offs
+- **[Architecture Decision Records](docs/ADR.md)** — 16 key design decisions with rationale and trade-offs

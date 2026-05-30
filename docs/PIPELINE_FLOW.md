@@ -241,7 +241,7 @@ A small **+2 confirmed-open credit** is added per axis the policy *verifies* is 
 (explicit "No" / empty list / confirmed 0) — never on "NA" — so 50 is the neutral/unknown baseline
 and a verified-open policy sits slightly above it.
 
-**Observed range across 79 policies (scorer v2.2): 9–50, average 29.7, median 29** — consistent with real-world PA policies universally adding restrictions beyond FDA label. No policy scores above 50; the 75/100 anchors are not reachable from the extracted parameters (Option A — see ADR-016). Reproducible via `python rescore.py` + `python result_formatter.py`.
+**Observed range across 79 policies (scorer v2.2, full re-extraction): 12–52, average 31.8, median 32** — consistent with real-world PA policies universally adding restrictions beyond FDA label. 4 policies reach FDA Parity (≥50); the 75/100 anchors are not reachable from the extracted parameters (Option A — see ADR-016). Reproducible via `python rescore.py` + `python result_formatter.py`.
 
 ---
 
