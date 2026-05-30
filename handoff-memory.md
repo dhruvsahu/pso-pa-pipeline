@@ -301,3 +301,216 @@ Added `import re`; early-return `None` for `NA`/``/`FDA labelled age`/`No Age Re
 ## task-2.3 — P2-11: close fitz document
 `process_pdf` now uses `with fitz.open(pdf_path) as doc:` so the native handle is released even on
 exception. **Verified:** parses a real 36-page sample PDF; structure unchanged.
+
+---
+
+# Access Score re-anchor — spec `specs/access-score-reanchor/` (P0-5, deterministic full 0–100)
+
+All 4 tasks DONE. Supersedes the earlier P0-5 deferral.
+
+| Task | Files | Status |
+|------|-------|--------|
+| 1.1 re-anchor scorer | `access_quality_scorer.py` | DONE |
+| 1.2 calibration fixtures | `test_scoring.py` | DONE |
+| 1.3 re-score + regenerate | `rescore.py` (run), `outputs/*` | DONE |
+| 1.4 docs | `README.md`, `docs/ADR.md` | DONE |
+
+## task-1.1 — re-anchor `calculate_score` to full 0–100 (deterministic)
+**Reasoning (P0-5):** old deduction-only model capped at ~58 → couldn't represent the objective's
+75/100 anchors. Reopened after the Devil's Advocate review because the objective text explicitly
+requires the full 0–100 scale; built deterministically (no LLM) to avoid eval-model rate-limit cost.
+**Changes (`access_quality_scorer.py`):** `SCORER_VERSION "1.0" → "2.0"`; `bonuses` list renamed to
+`credits` (incl. existing TB-waived/age-less entries). Added an **either/or** credit track mirroring
+the deductions: no step therapy **+10**, no phototherapy **+3**, no specialist **+5**, no reauth
+**+5**, no quantity limit **+3** (age-less **+5** and TB-waived **+3** already existed). Each
+dimension yields a deduction OR a credit, never both; score clamped `[0,100]`. Category cutoffs
+(`<25/<50/<75/≥75`) and the single-source `fda_alignment` (P3-6) were already correct → unchanged.
+`score_breakdown` now `{deductions, credits}`.
+**Verified:** no `bonuses` refs remain; `py_compile` OK.
+
+## task-1.2 — calibration fixtures
+**Changes:** added `test_scoring.py` asserting the three anchors (unrestricted ≥75, max-restrictive
+≤10, parity-with-PA ≈50). **Result:** PASS on the first weight set — `unrestricted=79, max=0,
+parity=45`. No tuning needed.
+
+## task-1.3 — re-score stored JSON + regenerate outputs
+**Changes:** ran `python rescore.py` (recompute every row's `access_quality` from stored extraction
+values under v2.0 — no LLM) then `python result_formatter.py` (rebuild CSV/XLSX).
+**Verified before → after:** range `7–50 → 10–76`; mean `27.8 → 36.7`; median `27 → 33`; all 79 rows
+`scorer_version=="2.0"` with `credits` breakdown; **2** policies now reach Preferred (≥75); CSV 79
+rows, 0 blanks, in `[0,100]`. Category split: 17 Highly Restricted, 43 Restricted, 17 FDA Parity,
+2 Preferred.
+
+## task-1.4 — docs (README + ADR)
+**Changes:** README "Scoring Model" → v2.0 (deduction + credit tables, cutoffs, regenerated 10–76
+stats, `test_scoring.py` note, and a note that competitive-positioning/100 isn't modelled). ADR:
+added **ADR-016** (two-sided full 0–100) and marked **ADR-006 Superseded by ADR-016** (TOC +
+summary-table rows updated). Note: ADR numbers 012–015 were already taken by the other-device
+commit, so this is 016.
+
+**Caveats carried forward:** weights are calibrated to synthetic anchors, **not** validated against a
+gold Access Score (none provided; P1-3 validation harness still deferred). True 100 is unreachable
+(max credit path ≈ +34 → ~84) because competitive formulary positioning isn't extracted.
+**Also noted:** `outputs/*` are still git-tracked at `933aae2` (the P3-5 `git rm --cached` didn't
+survive the earlier `reset --hard`) — untrack again before committing if desired.
+
+---
+
+# Review of v2.0 re-anchor → why we are changing the scorer AGAIN
+
+A 5-perspective `/review` of the v2.0 re-anchor (see `REVIEW.md`, 2026-05-30) found a serious defect.
+**Do not treat the v2.0 credit-for-absence model as final** — a follow-up spec
+(`specs/fix-access-score-review/`) corrects it. Summary of why:
+
+- **P0-1 (5/5 consensus): the credit track scored missing data (`"NA"`) as "restriction confirmed
+  absent."** Measured on the 79 stored rows: `quantity_limits=="NA"` → +3 on **62 rows**;
+  `specialist_types=="NA"` → +5 on **27**; `reauthorization_required=="NA"` → +5 on **14**;
+  `brand_steps/generic_steps=="NA"` (parsed to 0) → +10 on **8**. Net: **68/79 rows (86%)** lifted by
+  phantom credits (471 points); the **two "Preferred" rows (76)** are the **two all-`"NA"`
+  extractions** (incl. the `NO BRAND MATCH FOUND` row). Counterfactual (NA→no credit): mean 36.7→30.5,
+  category split 17/43/17/2 → 19/57/3/0 (**Preferred vanishes**). So "v2.0 reaches Preferred" was an
+  artifact of extraction failure, not measured access.
+- **P1-1 (decision: OPTION A):** even with perfect data, crediting the *absence* of step/QL/
+  specialist/reauth (which the FDA baseline also lacks) inflated a true FDA-parity policy to ~76,
+  breaking the objective's "50 = parity" anchor. **We chose option (a): credit ONLY strictly
+  better-than-FDA terms (age-less-restrictive, TB-waived).** Consequence to record clearly: the
+  absence-credits are removed, so for these PsO PA policies the practical ceiling returns to **~58**
+  (50 + age 5 + TB 3) — the objective's 75/100 anchors are reachable only by hypothetically
+  super-permissive/competitive policies that don't appear in this dataset. This is the **honest**
+  reading (matches the original ADR-006 observation and the earlier Devil's Advocate analysis): PA
+  policies only *add* restrictions vs the FDA label, so they sit at or below parity. Removing the
+  buggy credits also resolves P0-1 as a side effect.
+- **P1-2:** the `test_scoring.py` "parity" fixture (F3) wasn't a parity policy — it was a
+  mid-restriction policy that netted to 45 by penalty/credit cancellation, so it never actually
+  verified the 50-anchor and hid P0-1. Fixtures are being redone (true parity → ~50; unrestricted →
+  the ~58 ceiling; add an all-`"NA"` fixture asserting ~50, NOT high).
+- **P1-3 / P2 / P3:** spec weights diverged from code; `reauth != "Yes"` fragile; `_parse_min_age`
+  drops `<` (3 rows get a contradictory −5); `SCORER_VERSION` is write-only (rescore.py doesn't log
+  versions); regenerate-vs-rerun boundary under-documented; `PIPELINE_FLOW.md` still shows v1.0
+  stats; README category notation overlaps at endpoints. All folded into the follow-up spec.
+
+**Net for future readers:** the scorer is being moved from v2.0 (credit-for-absence, inflated) to a
+corrected model under option (a) — deduction-driven with only better-than-FDA credits, faithful
+50=parity, honest ~58 ceiling, and `"NA"` treated as *unknown* (neither credit nor penalty). Outputs
+will be re-scored downward (Preferred band expected to empty out).
+
+## Why option (a) caps at ~58, and the upper-range alternatives we considered
+
+Question raised: "if option (a) caps ~58, how do we ever reach the objective's 75/100 anchors?"
+Answer: **you cannot on a 'restrictions vs FDA label' axis** — a prior-authorization policy only
+*adds* restrictions, and the FDA baseline for these brands already has no step/QL/specialist/reauth,
+so the only better-than-FDA levers are age-younger (+5) and TB-waived (+3) → ceiling ~58. Reaching
+75/100 requires changing *what the upper half measures*. Alternatives evaluated:
+
+- **A — vs-FDA, credits only better-than-FDA (CHOSEN).** Faithful 50=parity; range ~0–58; 75/100
+  unreachable for this dataset. Deterministic, no re-run. Safest if the hidden gold is also vs-FDA.
+- **B — cohort-relative normalization.** Rank the 79 by restriction burden (least→~100, median→~50,
+  worst→0). Guarantees full range, deterministic, no re-run — but 50 = "median policy" not literal
+  FDA parity, and a score depends on the cohort.
+- **C — generosity signals.** Add upside from already-extracted data (auth duration: FDA doesn't
+  specify, so 12-mo/unspecified is more generous than 6-mo; broad age; TB-waived) → lenient policies
+  climb to ~50–75. Deterministic, no re-run; does not reach a true 100.
+- **D — competitive positioning.** Extract formulary tier / position vs competitors — the literal
+  basis for "best access against all competitors." Most faithful, earns a real 100, but needs a new
+  extractor + a **full LLM pipeline re-run** (eval-model token-budget cost).
+- **E — GenAI holistic scoring.** LLM assigns 0–100 from the rubric. Full range, but
+  non-deterministic + per-row LLM cost (deprioritized for reproducibility/rate-limits).
+
+**Decision (user, 2026-05-30): go with A.** Rationale: there is **no gold Access Score** to validate
+against, so any upper-range approach is a bet — and if the gold scored vs-FDA (PA policies ≤50),
+reaching 75/100 would *increase* error. A is the faithful, deterministic, lowest-risk choice; the
+75/100 region is accepted as unreachable for this dataset and that limitation is documented in
+ADR-016. B/C/D/E remain on record (here + ADR-016 "Alternatives Considered") for future work if a
+gold sample or competitive-positioning extraction becomes available.
+
+---
+
+# IMPLEMENTED — spec `specs/fix-access-score-review/` (v2.0 → v2.1, Option A). All tasks DONE.
+
+| Task | Finding | Files | Status |
+|------|---------|-------|--------|
+| 1.1 | P0-1 + P1-1(a) | `access_quality_scorer.py` | DONE |
+| 1.2 | P1-2 | `test_scoring.py` | DONE |
+| 1.3 | P2-2 | `access_quality_scorer.py` | DONE |
+| 1.4 | P2-1 | `access_quality_scorer.py` | DONE |
+| 1.5 | P2-3 | `rescore.py` | DONE |
+| 1.6 | P2-4 | `rescore.py`, `docs/ADR.md` | DONE |
+| 1.7 | P3-3 | — | SKIPPED (optional refactor; not worth pre-commit churn) |
+| 2.1 | — | `rescore.py`/`result_formatter.py` (run), `outputs/*` | DONE |
+| 2.2 | P1-3, P3-1, P3-2 | `README.md`, `docs/ADR.md`, `docs/PIPELINE_FLOW.md`, reanchor spec | DONE |
+
+**task-1.1 (P0-1 + P1-1a):** removed the five absence-credit branches (no-step +10, no-photo +3,
+no-specialist +5, no-reauth +5, no-QL +3); kept only better-than-FDA credits (age-younger +5,
+TB-waived +3). `"NA"`/missing now hits no branch → neutral. `SCORER_VERSION → "2.1"`.
+**task-1.3 (P2-2):** age block now detects a `<` / "under" / "up to" upper bound and skips the
+min-age comparison (no spurious −5, no contradictory message).
+**task-1.4 (P2-1):** reauth deduction uses `str(reauth).strip().lower() == "yes"` (casing-proof).
+**task-1.5 (P2-3):** `rescore.py` prints input `scorer_version` counts before overwriting.
+**task-1.6 (P2-4):** `rescore.py` docstring + ADR-016 now state re-scoring reflects scoring-logic
+changes only; extractor fixes need a full re-run.
+**task-1.2 (P1-2):** fixtures rewritten — FDA-parity≈50, max≤10, most-permissive≈58 (≥50 & <75),
+**all-`"NA"`≈50** (regression guard for P0-1).
+**task-2.1 (re-score):** ran `rescore.py` + `result_formatter.py`. **Verified:** all 79 rows v2.1;
+0 rows carry a removed absence-credit string; the two former all-`"NA"` "Preferred" rows
+(`287728-4459856.pdf/STELARA`, `361202-4967201.pdf/TREMFYA`) **76 → 50**; range **7–50**, mean 27.8,
+median 27, **0 rows ≥75**; categories 34 HR / 43 RA / 2 Parity / 0 Preferred; CSV 79 rows, 0 blanks;
+re-score idempotent.
+**task-2.2 (docs):** README scoring section → v2.1 (credit table = age/TB only, 7–50 stats,
+half-open category notation, "why ~58" note pointing to ADR-016 alternatives). ADR-016 → Correction
+with v2.1 numbers + regenerate-vs-rerun note; the withdrawn-v2.0 "10–76 / Preferred" consequence
+struck through. PIPELINE_FLOW.md → version label v1.0→v2.1. `specs/access-score-reanchor/`
+banner-superseded (prior turn).
+
+**Verification:** `py_compile` OK (scorer, rescore, test_scoring, result_formatter);
+`python test_scoring.py` PASS; no stale `v2.0`/`10–76`/`36.7` stats remain outside the struck/labeled
+historical text.
+**Net:** the score is now the faithful vs-FDA model (range ~7–50, 50=parity), the v2.0 NA-inflation
+is gone, and the Preferred band is empty — the honest outcome for PsO PA policies under Option A.
+
+---
+
+# v2.2 — confirmed-only credit + review-fix pass (after the 2nd /review)
+
+A second 5-perspective `/review` of v2.1 (resumed agents; see `REVIEW.md` dated 2026-05-30) confirmed
+all v2.0 P0/P1 findings RESOLVED with no regressions, and raised P2/P3 follow-ups. Per user decision,
+**P2-B was actioned** and the nits fixed. Changes:
+
+**P2-B (over-correction) → v2.2 confirmed-only credit.** v2.1 removed *all* absence-credits, so a
+*verified*-open policy scored the same as an unextracted one (both ~50). Added a **+2 confirmed-open
+credit** per axis (`access_quality_scorer.py`) that fires ONLY on positive evidence of absence —
+explicit `"No"` (phototherapy, reauth), empty list `[]` (specialist, QL), or both step counts
+confirmed numeric `0` — and **never on `"NA"`**. Each axis is now tri-state: present→deduct,
+confirmed-absent→+2, unknown→neutral (the tri-state the Architect originally recommended).
+`SCORER_VERSION → "2.2"`. **Trade-off recorded (ADR-016):** 50 now = neutral/unknown baseline; a
+fully-confirmed-open policy sits ~60; ceiling ~68 (confirmed +10, age +5, TB +3) — still <75 so
+Preferred stays unreachable. `"NA"` remains neutral, so the P0-1 fix holds.
+
+**P3-D — TB casing normalized** (`access_quality_scorer.py`): `tb_required`/`fda_tb` compared via
+`.strip().lower()`, mirroring the reauth fix.
+
+**P2-A — stale ADR lines fixed**: ADR-006 Status line and the ADR summary-table row no longer claim
+"two-sided / full 0–100" (they were describing the withdrawn v2.0); both now state the vs-FDA /
+ceiling-~68 / Option-A model.
+
+**P3-E — fixtures** (`test_scoring.py`): rewritten for v2.2 — all-`"NA"`≈50 (regression guard),
+confirmed-open≈60, max≤10, most-permissive≈68 (≥50 & <75), confirmed-open > all-NA, plus guards for
+upper-bound age (`<18` → no deduction) and reauth casing (`"yes"` → −5).
+
+**P3-F — `docs/PIPELINE_FLOW.md`**: scorer label `v1.0 → v2.2`; category list converted to half-open
+notation; added the confirmed-open-credit note; stats updated to 9–50 / 29.7 / 29.
+
+**P3-C — dead ≥75 band**: README + PIPELINE_FLOW category tables now annotate "Preferred [75,100] —
+not reachable for this dataset (ceiling ~68)". Code branches retained (correct general definition).
+
+**Re-scored (v2.2) + regenerated.** `rescore.py` (logged `{'2.1': 79} → 2.2`) + `result_formatter.py`.
+**Verified:** all 79 rows v2.2; distribution **9–50, mean 29.7, median 29, 0 ≥75**; categories
+34 HR / 43 RA / 2 Parity / 0 Preferred; credit footprint = 73 confirmed-no-photo + 2 confirmed-no-reauth
++ 2 age-younger, **0 from `"NA"`**; the two all-`"NA"` rows stay **50**; CSV 79 rows/0 blanks;
+`test_scoring.py` PASS; `py_compile` OK.
+
+**Not done (by design):** P3-G informational items (F4 input-shape comment, no-baseline brand reports
+"FDA Parity" rather than "unknown", theoretical-vs-observed ceiling wording) — left as future flags;
+P3-3 declarative-weights-table refactor still skipped.
+
+**Doc trail updated:** `REVIEW.md` (2nd review), `docs/ADR.md` (ADR-016 v2.2 refinement + P2-A fixes),
+`README.md`, `docs/PIPELINE_FLOW.md`, this file. `specs/fix-access-score-review/` carries a v2.2 note.
