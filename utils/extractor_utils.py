@@ -1,5 +1,6 @@
 import re
 import os
+import json
 
 # ---------------------------------------------------------
 # BRAND → GENERIC NAME MAPPING
@@ -59,7 +60,6 @@ def clean_json_output(text):
     - ```json ... ``` wrappers
     - ``` ... ``` wrappers
     - Prose before or after the JSON block
-    - Trailing braces/prose after the JSON object (P2-7 fix)
     """
 
     text = text.strip()
@@ -73,26 +73,20 @@ def clean_json_output(text):
 
     text = text.replace("```", "")
 
-    # Extract the first complete JSON object using json.JSONDecoder
-    # which correctly handles nested braces, unlike the old greedy
-    # regex r"\{.*\}" that captured from the first { to the LAST }
-    # in the entire string — pulling in trailing prose/braces and
-    # causing json.loads failures (P2-7).
-    import json
-
-    # Find the first '{' and try raw_decode from there
-    brace_pos = text.find("{")
-    if brace_pos != -1:
+    # Extract the FIRST complete, balanced JSON object starting at the
+    # first '{'. The previous greedy r"\{.*\}" spanned from the first '{'
+    # to the LAST '}', which over-captured trailing prose/braces and broke
+    # json.loads. raw_decode parses exactly one value and stops.
+    start = text.find("{")
+    if start != -1:
         try:
-            decoder = json.JSONDecoder()
-            obj, _ = decoder.raw_decode(text, brace_pos)
+            obj, _end = json.JSONDecoder().raw_decode(text[start:])
             return json.dumps(obj)
-        except json.JSONDecodeError:
+        except ValueError:
+            # Fall through — return the stripped text so the caller's
+            # json.loads raises and existing error handling fires.
             pass
 
-    # Fallback: return the stripped text as-is and let the
-    # caller's json.loads raise a clear error (surfaced by
-    # the extraction_error flag from P1-2)
     return text.strip()
 
 
